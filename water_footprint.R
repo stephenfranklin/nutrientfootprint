@@ -42,42 +42,42 @@ setnames(plants, c("Product_code_FAOSTAT","Product_code_HS",
                     "Global_avg","California"))
 
 plants <- plants[2:1063,]
-View(plants)
-View(plants[1001:nrow(plants),])
+#View(plants)
+#View(plants[1001:nrow(plants),])
 
-is.factor(plants$WFtype)
-levels(plants$WFtype)
+#is.factor(plants$WFtype)
+#levels(plants$WFtype)
 plants$WFtype <- as.factor(plants$WFtype)
 plants$Product_description_HS <- as.factor(plants$Product_description_HS)
-levels(plants$Product_description_HS)
+#levels(plants$Product_description_HS)
 plants$Product_description_FAOSTAT <- as.factor(plants$Product_description_FAOSTAT)
-levels(plants$Product_description_FAOSTAT)
+#levels(plants$Product_description_FAOSTAT)
 plants$Product_code_HS <- as.factor(plants$Product_code_HS)
-levels(plants$Product_code_HS)
+#levels(plants$Product_code_HS)
 
 #### make total footprint
 ### identify each footprint group and assign group number.
 wfgroup <- rep(seq(1, nrow(plants)/3, by=1),each=3)
-length(wfgroup)
+#length(wfgroup)
 plants[ ,wfgroup:=factor(.N) ]  ## .N indicates the size of a column in data.table. It's a "special variable".
 plants$wfgroup<-as.factor(wfgroup)
 
 ### total footprint column
 plants[ ,Global_avg_footprint:=numeric(.N) ]
 plants[ ,California_footprint:=numeric(.N) ]
-View(plants)
+#View(plants)
 
 ### sum total footprint
 California_footprint<-plants[,sum(California,na.rm=T),by=wfgroup]
 Global_avg_footprint<-plants[,sum(Global_avg,na.rm=T),by=wfgroup]
-nrow(California_footprint)
-nrow(Global_avg_footprint)
-class(California_footprint)
+#nrow(California_footprint)
+#nrow(Global_avg_footprint)
+#class(California_footprint)
 
 ### Remove NA rows ("Blue" and "Grey")
 plants_g <- plants[WFtype=="Green"]
-nrow(plants_g)
-View(plants_g)
+#nrow(plants_g)
+#View(plants_g)
 ##### Note: Important that the order didn't change here. 
 
 ### Slap in total footprints.
@@ -91,7 +91,7 @@ Products$index <- seq(from = 1, to=nrow(Products))
 setkey(Products, "Product_description_HS")
 for (i in "Product_description_HS") 
     Products[is.na(get(i)), (i) := Products[i,"Product_description_FAOSTAT",with=F]]
-View(Products)
+#View(Products)
 setkey(Products, "index")
 ##### Note: Important that the order is the same as plants_g. 
 
@@ -102,19 +102,24 @@ plants_g$Products<-Products$Product_description_HS
 sum(!is.na(plants_g$Product_description_HS))         ## 305
 sum(!is.na(plants_g$Product_description_FAOSTAT))    ## 146
 sum(!is.na(plants_g$Products))                       ## 354 is good.
-nrow(plants_g)
+#nrow(plants_g)
 
 ### Minimize DT
 plants_cg <- plants_g[,c("Products","California_footprint","Global_avg_footprint"),with=F]
-View(plants_cg)
+#View(plants_cg)
 
 #### explore
 setkey(plants_cg,"California_footprint")
 qplot(data = tail(plants_cg,10), y=Products,x=California_footprint, )
-View(plants_cg)
+#View(plants_cg)
 
+### Let's narrow the products.
+selected_p<- c(354,353,352,351,349,345,344,342,335,334,331,329,326,320,319,310,308,302,297,294,289,284,281,279,275,268,266,262,257,256,254,247,246,245,235,229,225,224,221,220,218,217,216,215,214,213,212,207,206,205,203,202,199,198,195,186,185,184,183,182,181,176)
+selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  ## No data for California.
+plants_s <- plants_cg[selected_p]
 
-
+setkey(plants_s,"California_footprint")
+qplot(data = tail(plants_s,10), y=Products,x=California_footprint, )
 
 
 ##### Animal data -- import data ####
@@ -135,44 +140,44 @@ setnames(animal, c("Product_description_HS","WFtype",
                    "Global_wavg","US_wavg"))
 animal <- animal[2:.N]
 
-is.numeric(animal$Global_wavg)  ## FALSE
+#is.numeric(animal$Global_wavg)  ## FALSE
 animal$Global_wavg <- as.numeric(animal$Global_wavg)
 animal$US_wavg <- as.numeric(animal$US_wavg)
 
 ## Are all products described?
-sum(!is.na(animal$Product_description_HS)) == nrow(animal)/3
+#sum(!is.na(animal$Product_description_HS)) == nrow(animal)/3
 ## [1] TRUE probably.
-is.factor(animal$WFtype)
-levels(animal$WFtype)
+#is.factor(animal$WFtype)
+#levels(animal$WFtype)
 animal$WFtype <- as.factor(animal$WFtype)
 animal$Product_description_HS <- as.factor(animal$Product_description_HS)
-is.factor(animal$Product_description_HS)
-length(levels(animal$Product_description_HS)) == nrow(animal)/3
+#is.factor(animal$Product_description_HS)
+#length(levels(animal$Product_description_HS)) == nrow(animal)/3
 ## [1] TRUE
 
 #### make total footprint
 ### identify each footprint group and assign group number.
 wfgroup <- rep(seq(1, nrow(animal)/3, by=1),each=3)
-length(wfgroup)
+#length(wfgroup)
 animal[ ,wfgroup:=factor(.N) ]  ## .N indicates the size of a column in data.table. It's a "special variable".
 animal$wfgroup<-as.factor(wfgroup)
 
 ### total footprint column
 animal[ ,Global_avg_footprint:=numeric(.N) ]
 animal[ ,California_footprint:=numeric(.N) ]
-View(animal)
+#View(animal)
 
 ### sum total footprint
 US_footprint<-animal[,sum(US_wavg,na.rm=T),by=wfgroup]
 Global_avg_footprint<-animal[,sum(Global_wavg,na.rm=T),by=wfgroup]
-nrow(US_footprint)
-nrow(Global_avg_footprint)
-class(US_footprint)
+#nrow(US_footprint)
+#nrow(Global_avg_footprint)
+#class(US_footprint)
 
 ### Remove NA rows ("Blue" and "Grey")
 animal_g <- animal[WFtype=="Green"]
-nrow(animal_g)
-View(animal_g)
+#nrow(animal_g)
+#View(animal_g)
 ##### Note: Important that the order didn't change here. 
 
 ### Slap in total footprints.
@@ -183,7 +188,7 @@ animal_g$US_footprint<-US_footprint$V1
 animal_cg <- animal_g[,c("Product_description_HS","US_footprint","Global_avg_footprint"),with=F]
 ## Note that for lack of more specific data that the California footprint is the US footprint.
 setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint"))
-View(animal_cg)
+#View(animal_cg)
 
 #### explore
 setkey(animal_cg,"California_footprint")
@@ -200,9 +205,21 @@ nonfood <-"live(?!r)|waste|semen|hair|skin|hide|bend|leather"
 animal_cg$food<-!grepl(nonfood, animal_cg$Products, perl=T,ignore.case = T)
 animal_ed <- animal_cg[food==TRUE,]
 
-View(animal_ed)
+#View(animal_ed)
 
 ### explore 2
 setkey(animal_ed,"California_footprint")
 qplot(data = tail(animal_ed,20), y=Products,x=California_footprint, )
 
+### Let's narrow the products.
+selected_a<- c(65,63,60,53,57,50,46,40,36,35,32,15,11,6) 
+animal_s <- animal_ed[selected_a,1:3,with=F]
+
+setkey(animal_s,"California_footprint")
+qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
+
+
+#### Combine DTs #####
+water <- rbind(plants_s,animal_s)
+setkey(water,California_footprint)
+qplot(data = tail(water,20), y=Products,x=California_footprint)
