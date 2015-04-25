@@ -1,5 +1,7 @@
 library(data.table)
 library(ggplot2)
+library("jsonlite")
+library(curl)
 setwd("~/git_folder/water_footprint/")
 
 #### get data ####
@@ -40,7 +42,6 @@ setnames(plants, c("Product_code_FAOSTAT","Product_code_HS",
                     "Product_description_FAOSTAT","Root_product_HS",
                     "Product_fraction","Value_fraction","WFtype",
                     "Global_avg","California"))
-
 plants <- plants[2:1063,]
 #View(plants)
 #View(plants[1001:nrow(plants),])
@@ -70,9 +71,13 @@ plants[ ,California_footprint:=numeric(.N) ]
 ### sum total footprint
 California_footprint<-plants[,sum(California,na.rm=T),by=wfgroup]
 Global_avg_footprint<-plants[,sum(Global_avg,na.rm=T),by=wfgroup]
+#View(California_footprint)
 #nrow(California_footprint)
 #nrow(Global_avg_footprint)
 #class(California_footprint)
+
+### 0 Values to NA
+California_footprint$V1[which(California_footprint$V1==0)] <- NA
 
 ### Remove NA rows ("Blue" and "Grey")
 plants_g <- plants[WFtype=="Green"]
@@ -83,7 +88,6 @@ plants_g <- plants[WFtype=="Green"]
 ### Slap in total footprints.
 plants_g$Global_avg_footprint<-Global_avg_footprint$V1
 plants_g$California_footprint<-California_footprint$V1
-
 
 ### Combine Product names
 Products <- plants_g[,c("Product_description_HS","Product_description_FAOSTAT"),with=F]
@@ -110,16 +114,22 @@ plants_cg <- plants_g[,c("Products","California_footprint","Global_avg_footprint
 
 #### explore
 setkey(plants_cg,"California_footprint")
-qplot(data = tail(plants_cg,10), y=Products,x=California_footprint, )
+qplot(data = tail(plants_cg,10), y=Products,x=California_footprint)
+
+g <- ggplot(head(na.omit(plants_cg),10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+g <- g + geom_bar(stat="identity") + coord_flip() 
+g + xlab("Product") + ylab("water footprint (m^3/ton)")
 #View(plants_cg)
 
 ### Let's narrow the products.
 selected_p<- c(354,353,352,351,349,342,335,334,331,329,326,320,319,310,302,297,294,289,284,281,279,275,268,266,262,257,256,254,247,246,245,239,235,229,225,224,221,220,218,217,216,215,214,213,212,207,206,205,203,202,199,198,195,186,185,184,183,182,181,176)
-selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  ## No data for California.
+selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  
+    ## nc = Not California: selected from foods that are NA (or 0) for California.
 plants_s <- plants_cg[selected_p]
 
 setkey(plants_s,"California_footprint")
 qplot(data = tail(plants_s,10), y=Products,x=California_footprint, )
+qplot(data = head(plants_s,10), y=Products,x=California_footprint, )
 
 
 ##### Animal data -- import data ####
@@ -174,6 +184,10 @@ Global_avg_footprint<-animal[,sum(Global_wavg,na.rm=T),by=wfgroup]
 #nrow(Global_avg_footprint)
 #class(US_footprint)
 
+### 0 Values to NA
+US_footprint$V1[which(US_footprint$V1==0)] <- NA
+#View(US_footprint)
+
 ### Remove NA rows ("Blue" and "Grey")
 animal_g <- animal[WFtype=="Green"]
 #nrow(animal_g)
@@ -186,6 +200,7 @@ animal_g$US_footprint<-US_footprint$V1
 
 ### Minimize DT and rename to match plants.
 animal_cg <- animal_g[,c("Product_description_HS","US_footprint","Global_avg_footprint"),with=F]
+## cg = CA + Global
 ## Note that for lack of more specific data that the California footprint is the US footprint.
 setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint"))
 #View(animal_cg)
@@ -194,20 +209,19 @@ setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint")
 setkey(animal_cg,"California_footprint")
 qplot(data = tail(animal_cg,10), y=Products,x=California_footprint, )
 
-## There's some non-food products which we should eliminate.
+## There's some non-food products which we should eliminate, 
+##          e.g. Semen bovine 1064393    1142704.
 animal_cg[,food:=logical(.N)]
 ## Some key words for non-food / food are:
 ## live, waste, semen, hair, skin, hide, bend, leather
 ## carcass, cut, meat, edible, fresh, frozen, prepar, preserv, process, dried
-
 nonfood <-"live(?!r)|waste|semen|hair|skin|hide|bend|leather"
 ## regex note: (?!x) is the "negative lookahead". 
 animal_cg$food<-!grepl(nonfood, animal_cg$Products, perl=T,ignore.case = T)
 animal_ed <- animal_cg[food==TRUE,]
-
 #View(animal_ed)
 
-### explore 2
+### explore
 setkey(animal_ed,"California_footprint")
 qplot(data = tail(animal_ed,20), y=Products,x=California_footprint, )
 
@@ -217,7 +231,7 @@ selected_a<- c(63,60,57,46,40,36,35,32,15,11,6)
 ##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
 animal_s <- animal_ed[selected_a,1:3,with=F]
 
-setkey(animal_s,"California_footprint"http://127.0.0.1:36824/graphics/plot_zoom_png?width=946&height=609)
+setkey(animal_s,"California_footprint")
 qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
 
 
@@ -235,6 +249,21 @@ g + xlab("Product") + ylab("water footprint (m^3/ton)")
 g <- ggplot(head(water,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
 g <- g + geom_bar(stat="identity") + coord_flip() 
 g + xlab("Product") + ylab("water footprint (m^3/ton)")
+
+
+#### Here we painstakingly wrangle the USDA data.
+usda_api_key <- readLines("./usda_api_key.R")
+## Get a USDA api key and paste it into a file.
+##      Be sure to end the line with a carriage return.
+nutrients <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=n&sort=n&max=200&api_key=",usda_api_key)) 
+protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
+kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
+groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
+beefg <- groups$list$item$id[grep("^Beef",groups$list$item$name)]
+beeflist <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&nutrients=",kcal,"&fg=",beefg))
+beef_item1_protein <- beeflist$report$foods$nutrients[[1]][2,4]
+beeflist_proteins <- beeflist$report$foods$nutrients[[1]][2,4]
+
 
 
 #### Next we want to convert these to liters per 100 grams.
