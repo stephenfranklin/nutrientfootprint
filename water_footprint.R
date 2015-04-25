@@ -114,7 +114,7 @@ qplot(data = tail(plants_cg,10), y=Products,x=California_footprint, )
 #View(plants_cg)
 
 ### Let's narrow the products.
-selected_p<- c(354,353,352,351,349,345,344,342,335,334,331,329,326,320,319,310,308,302,297,294,289,284,281,279,275,268,266,262,257,256,254,247,246,245,235,229,225,224,221,220,218,217,216,215,214,213,212,207,206,205,203,202,199,198,195,186,185,184,183,182,181,176)
+selected_p<- c(354,353,352,351,349,342,335,334,331,329,326,320,319,310,302,297,294,289,284,281,279,275,268,266,262,257,256,254,247,246,245,239,235,229,225,224,221,220,218,217,216,215,214,213,212,207,206,205,203,202,199,198,195,186,185,184,183,182,181,176)
 selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  ## No data for California.
 plants_s <- plants_cg[selected_p]
 
@@ -212,14 +212,61 @@ setkey(animal_ed,"California_footprint")
 qplot(data = tail(animal_ed,20), y=Products,x=California_footprint, )
 
 ### Let's narrow the products.
-selected_a<- c(65,63,60,53,57,50,46,40,36,35,32,15,11,6) 
+selected_a<- c(63,60,57,46,40,36,35,32,15,11,6) 
+## Note: removing animal_ed[65] as an outlier, though a remarkable one.
+##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
 animal_s <- animal_ed[selected_a,1:3,with=F]
 
-setkey(animal_s,"California_footprint")
+setkey(animal_s,"California_footprint"http://127.0.0.1:36824/graphics/plot_zoom_png?width=946&height=609)
 qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
+
 
 
 #### Combine DTs #####
 water <- rbind(plants_s,animal_s)
 setkey(water,California_footprint)
-qplot(data = tail(water,20), y=Products,x=California_footprint)
+#nrow(water)  ## 71 items
+#qplot(Products, data=tail(water,20), geom="bar", weight=California_footprint, ylab="footprint (m^3/ton)") + coord_flip()
+
+g <- ggplot(tail(water,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+g <- g + geom_bar(stat="identity") + coord_flip() 
+g + xlab("Product") + ylab("water footprint (m^3/ton)")
+
+g <- ggplot(head(water,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+g <- g + geom_bar(stat="identity") + coord_flip() 
+g + xlab("Product") + ylab("water footprint (m^3/ton)")
+
+
+#### Next we want to convert these to liters per 100 grams.
+#### And also gallons per 100 grams.
+#### Because the USDA data is in measures of 100 grams.
+#### So then we can get the liters or gallons per grams of protein.
+
+#### The USDA numbers and descriptions of foods are different
+#### than the water footprint data.
+#### The list is just big enough at 71 (+ 36 for the non-CA data) 
+#### that I'm tempted to automate the matching.
+#### Which will involve regex and some algorithm.
+#### That might not be not worth the time.
+#### It might be better to just do it manually.
+#### but then it's not reproducible.
+
+### e.g. USDA doesn't have "bovine", and a search for "beef"
+### yields 1154 results with a variety of protein content.
+### "beef ground" yield 49 choices.
+### Perhaps the best choice is: 
+### "name": "Beef, ground, unspecified fat content, cooked",
+### "ndbno": "23220"  (about 25 g protein)
+### But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
+### There's also a nutrient list view for which a group 
+### such as "Beef Products" will be listed with their protein content.
+### I could take the median maybe. or take a couple of products.
+
+### And also raw meat has a lower protein content because it has
+### a higher water content.
+### Surely cutting out fat and cooking out water,
+### increases the proportion of protein in that section.
+### So that skews the water footprint.
+### There needs to be some accounting for the portion of 
+### the carcass that is used. So maybe the median is the best option.
+### maybe the median value of just the raw cuts.
