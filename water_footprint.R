@@ -1,7 +1,8 @@
 library(data.table)
 library(ggplot2)
-library("jsonlite")
+library(jsonlite)
 library(curl)
+library(plyr)
 setwd("~/git_folder/water_footprint/")
 
 #### get data ####
@@ -226,9 +227,10 @@ setkey(animal_ed,"California_footprint")
 qplot(data = tail(animal_ed,20), y=Products,x=California_footprint, )
 
 ### Let's narrow the products.
-selected_a<- c(63,60,57,46,40,36,35,32,15,11,6) 
+selected_a<- c(60,57,40,35,32,20,15,11,6) 
 ## Note: removing animal_ed[65] as an outlier, though a remarkable one.
 ##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
+##  Bovine meat cured    21909	23799
 animal_s <- animal_ed[selected_a,1:3,with=F]
 
 setkey(animal_s,"California_footprint")
@@ -259,10 +261,29 @@ nutrients <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&
 protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
 kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
 groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
+
+### Beef. "gm" is grams protein per 100 grams food.
 beefg <- groups$list$item$id[grep("^Beef",groups$list$item$name)]
-beeflist <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&nutrients=",kcal,"&fg=",beefg))
-beef_item1_protein <- beeflist$report$foods$nutrients[[1]][2,4]
-beeflist_proteins <- beeflist$report$foods$nutrients[[1]][2,4]
+beeflist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",beefg))
+beef.prot <- rbind.fill(beeflist.prot$report$foods$nutrients)
+beef.foods <- rbind.fill(beeflist.prot$report$foods)
+beef.pf <- cbind(beef.prot,beef.foods)
+### Keep only raw cuts.
+beef.pf <- as.data.table(beef.pf[grep("raw",beef.pf$name),])
+### Finally, return the median.
+beef.protein <- median(beef.pf$gm)
+
+### Pork.
+porkg <- groups$list$item$id[grep("^Pork",groups$list$item$name)]
+porklist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",porkg))
+pork.prot <- rbind.fill(porklist.prot$report$foods$nutrients)
+pork.foods <- rbind.fill(porklist.prot$report$foods)
+pork.pf <- cbind(pork.prot,pork.foods)
+### Keep only raw cuts.
+pork.pf <- as.data.table(pork.pf[grep("raw",pork.pf$name),])
+### Finally, return the median.
+pork.protein <- median(pork.pf$gm)
+
 
 
 
