@@ -240,6 +240,7 @@ selected_a<- c(60,57,40,35,32,20,15,11,6)
 ## Note: removing animal_ed[65] as an outlier, though a remarkable one.
 ##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
 ##  Bovine meat cured    21909	23799
+## Also: why no fish?
 animal_s <- animal_ed[selected_a,1:3,with=F]
 setkey(animal_s,"California_footprint")
 qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
@@ -326,9 +327,47 @@ animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
          ,"protein"]<-lamb.protein
 animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
          ,"protein"]<-beef.protein
-View(animal_s)
+#View(animal_s)
+# Recall that grams protein is measured per 100 grams of product.
 
-grep("milk",animal_s[,Products],ignore.case=T)
+### USDA plant data
+## These plants aren't easily grepped in a function.
+## From plants_s with key California_footprint
+badgreps <- c(1,9,13,20,21,25,29,31,33,35,36,37,41,42,43,45,46,48,53,54,56)
+length(badgreps)
+
+plants_t <- plants_s[-badgreps,]
+View(plants_t)
+
+# Get 1 big nutrient list for all relavant groups.
+# add $protein column to plants_s
+# write a function that:
+#   grep plants_s for the first word in the Product column.
+#   subsets nutrient list by that word + "raw"
+#   returns the median to plants_s$protein.
+# lapply or sapply function to plants_s.
+
+plant_g <- c("2000","0900","1600","1200","1100")
+plantlist.prot1 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/",
+                "?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",
+                protein,"&fg=",plant_g[1],"&fg=",plant_g[2],"&fg=",plant_g[3],
+                "&fg=",plant_g[4],"&fg=",plant_g[5]))
+plantlist.prot2 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/",
+                                   "?format=json&api_key=",usda_api_key,"&max=1500",
+                                   "&offset=1500&nutrients=",
+                                   protein,"&fg=",plant_g[1],"&fg=",plant_g[2],"&fg=",plant_g[3],
+                                   "&fg=",plant_g[4],"&fg=",plant_g[5]))
+plantlist.prot <- rbind.fill(plantlist.prot1$report$foods,plantlist.prot2$report$foods)
+plantlist.nutr <- rbind.fill(plantlist.prot$nutrients)
+plantlist.prot <- cbind(plantlist.prot,plantlist.nutr)
+View(plantlist.prot)
+
+product.prot <- rbind.fill(productlist.prot$report$foods$nutrients)
+product.foods <- rbind.fill(productlist.prot$report$foods)
+product.pf <- cbind(product.prot,product.foods)
+
+
+View(plantlist.prot)
 
 #### Next we want to convert these to liters per 100 grams.
 #### And also gallons per 100 grams.
