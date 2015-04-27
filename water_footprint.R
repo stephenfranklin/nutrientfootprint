@@ -1,3 +1,12 @@
+#### Conversions:
+#### 1000 cubic meters / metric ton
+#### = 120 gallons / pound
+#### = 26.4 gallons / 100 grams  
+#### ~or~ 4000 m3/t = 100 gal / 100 g
+
+## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
+## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
+
 library(data.table)
 library(ggplot2)
 library(jsonlite)
@@ -232,7 +241,6 @@ selected_a<- c(60,57,40,35,32,20,15,11,6)
 ##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
 ##  Bovine meat cured    21909	23799
 animal_s <- animal_ed[selected_a,1:3,with=F]
-
 setkey(animal_s,"California_footprint")
 qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
 
@@ -262,30 +270,65 @@ protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
 kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
 groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
 
-### Beef. "gm" is grams protein per 100 grams food.
-beefg <- groups$list$item$id[grep("^Beef",groups$list$item$name)]
-beeflist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",beefg))
-beef.prot <- rbind.fill(beeflist.prot$report$foods$nutrients)
-beef.foods <- rbind.fill(beeflist.prot$report$foods)
-beef.pf <- cbind(beef.prot,beef.foods)
-### Keep only raw cuts.
-beef.pf <- as.data.table(beef.pf[grep("raw",beef.pf$name),])
-### Finally, return the median.
-beef.protein <- median(beef.pf$gm)
+### Obtain the median protein for cuts of raw meat.
+### See 'groups' for good arguments.
+### "gm" is grams protein per 100 grams food.
+### product greps for the group number from the groups list.
+### filter1 filters with grep (use "\\b" for a word boundary).
+### filter2 filters the inverse from grep.
+usda_raw_median <- function(product, filter1=NULL,filter2=NULL) {
+    if(!is.character(product)) stop("enter a string, i.e. usda_raw_median(\"beef\").\n")
+    #product.ch <- paste0("^",product)
+    productg <- groups$list$item$id[grep(product,groups$list$item$name, ignore.case = T)]
+    productlist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",productg))
+    product.prot <- rbind.fill(productlist.prot$report$foods$nutrients)
+    product.foods <- rbind.fill(productlist.prot$report$foods)
+    product.pf <- cbind(product.prot,product.foods)
+    if(!missing(filter1)) {
+    ### e.g. "raw". Keep only raw cuts.
+        product.pf <- as.data.table(product.pf[grep(filter1,product.pf$name,perl=T,ignore.case=T),])
+    }
+    if(!missing(filter2)) {
+        product.pf <- product.pf[grep(filter2,product.pf$name,perl=T,ignore.case=T,invert=T),]
+    }
+    ### Finally, return the median.
+    product.protein <- median(product.pf$gm)
+    product.protein
+    #product.pf
+}
 
-### Pork.
-porkg <- groups$list$item$id[grep("^Pork",groups$list$item$name)]
-porklist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",porkg))
-pork.prot <- rbind.fill(porklist.prot$report$foods$nutrients)
-pork.foods <- rbind.fill(porklist.prot$report$foods)
-pork.pf <- cbind(pork.prot,pork.foods)
-### Keep only raw cuts.
-pork.pf <- as.data.table(pork.pf[grep("raw",pork.pf$name),])
-### Finally, return the median.
-pork.protein <- median(pork.pf$gm)
+beef.protein <- usda_raw_median("beef","\\braw\\b")  ## Bovine.
+pork.protein <- usda_raw_median("pork","\\braw\\b")  ## Swine.
+lamb.protein <- usda_raw_median("lamb","\\braw\\b")  ## Sheep.
+poultry.protein <- usda_raw_median("poultry","\\braw\\b")  ## Fowl.
+egg.protein <- usda_raw_median("egg","\\braw\\b")
+butter.protein <- usda_raw_median("dairy","\\bbutter\\b")
+cheese.protein <- usda_raw_median("dairy","cheese")
+milk.protein <- usda_raw_median("dairy","milk", "\\b(dry|dried|condensed|evaporated)\\b")
+yogurt.protein <- usda_raw_median("dairy","yogurt")
 
+animal_s[,protein:=numeric(.N)]
+animal_s[grep("yogurt",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-yogurt.protein
+animal_s[grep("milk",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-milk.protein
+animal_s[grep("eggs",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-egg.protein
+animal_s[grep("fowl",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-poultry.protein
+animal_s[grep("cheese",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-cheese.protein
+animal_s[grep("butter",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-butter.protein
+animal_s[grep("swine",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-pork.protein
+animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-lamb.protein
+animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
+         ,"protein"]<-beef.protein
+View(animal_s)
 
-
+grep("milk",animal_s[,Products],ignore.case=T)
 
 #### Next we want to convert these to liters per 100 grams.
 #### And also gallons per 100 grams.
