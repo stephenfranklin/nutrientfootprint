@@ -339,14 +339,7 @@ length(badgreps)
 plants_t <- plants_s[-badgreps,]
 View(plants_t)
 
-# Get 1 big nutrient list for all relavant groups.
-# add $protein column to plants_s
-# write a function that:
-#   grep plants_s for the first word in the Product column.
-#   subsets nutrient list by that word + "raw"
-#   returns the median to plants_s$protein.
-# lapply or sapply function to plants_s.
-
+# Get 1 big nutrient list for all relevant groups.
 plant_g <- c("2000","0900","1600","1200","1100")
 plantlist.prot1 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/",
                 "?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",
@@ -360,14 +353,39 @@ plantlist.prot2 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/"
 plantlist.prot <- rbind.fill(plantlist.prot1$report$foods,plantlist.prot2$report$foods)
 plantlist.nutr <- rbind.fill(plantlist.prot$nutrients)
 plantlist.prot <- cbind(plantlist.prot,plantlist.nutr)
-View(plantlist.prot)
+#View(plantlist.prot)
 
-product.prot <- rbind.fill(productlist.prot$report$foods$nutrients)
-product.foods <- rbind.fill(productlist.prot$report$foods)
-product.pf <- cbind(product.prot,product.foods)
+plants_t[,protein:=numeric(.N)]
 
+# write a function that:
+#   grep plants_t for the first word in the Product column.
+#   subsets nutrient list by that word + "raw"
+#   returns the median to plants_s$protein.
+# lapply or sapply function to plants_s.
+usda_plants_raw_median <- function(product,nutrient,filter=NULL){
+    ## product: string from which the first word will be taken.
+    ## nutrient: use protein or kcal or sthg from DT nutrients.
+    ## filter: string with which plantlist.prot will be filtered.
+    product<-as.character(product)
+    thisplant <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
+    thisplant <- sub("s$|(ies)$","",thisplant)
+    plantlist <- as.data.table(plantlist.prot[grep(thisplant,
+                            plantlist.prot$name,perl=T,ignore.case=T),])
+    if(!missing(filter)) {
+        ### e.g. "raw". Keep only raw cuts.
+        if(length( grep(filter,plantlist$name,perl=T,ignore.case=T) ) > 0)
+            plantlist <- as.data.table(plantlist[grep(filter,plantlist$name,perl=T,ignore.case=T),])
+    }
+    ### Finally, return the median.
+    product.protein <- median(plantlist$gm)
+    #list(product.protein, plantlist$gm)
+    product.protein
+}
 
-View(plantlist.prot)
+plants_t$protein <- lapply(plants_t$Products,usda_plants_raw_median,protein,"\\braw\\b")
+test <- usda_plants_raw_median(plants_t$Products[10],protein,"raw")
+test
+
 
 #### Next we want to convert these to liters per 100 grams.
 #### And also gallons per 100 grams.
