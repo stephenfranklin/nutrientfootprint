@@ -368,7 +368,8 @@ usda_plants_raw_median <- function(product,nutrient,filter=NULL){
     ## filter: string with which plantlist.prot will be filtered.
     product<-as.character(product)
     thisplant <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
-    thisplant <- sub("s$|(ies)$","",thisplant)
+    thisplant <- sub("s$","",thisplant)
+    thisplant <- paste0("\\b",thisplant)
     plantlist <- as.data.table(plantlist.prot[grep(thisplant,
                             plantlist.prot$name,perl=T,ignore.case=T),])
     if(!missing(filter)) {
@@ -377,20 +378,50 @@ usda_plants_raw_median <- function(product,nutrient,filter=NULL){
             plantlist <- as.data.table(plantlist[grep(filter,plantlist$name,perl=T,ignore.case=T),])
     }
     ### Finally, return the median.
-    product.protein <- median(plantlist$gm)
-    #list(product.protein, plantlist$gm)
+    product.protein <- as.numeric(median(plantlist$gm))
+    #list(product.protein, plantlist)     ## testing individual
+    #list(product.protein, plantlist$gm)  ## testing group via lapply
     product.protein
 }
 
 plants_t$protein <- lapply(plants_t$Products,usda_plants_raw_median,protein,"\\braw\\b")
-test <- usda_plants_raw_median(plants_t$Products[10],protein,"raw")
-test
+
+### Combine plants_t and animal_s
+water <- as.data.table(rbind.fill(plants_t,animal_s))
+setkey(water,California_footprint)
+water$protein <- as.numeric(water$protein)
 
 
-#### Next we want to convert these to liters per 100 grams.
-#### And also gallons per 100 grams.
-#### Because the USDA data is in measures of 100 grams.
-#### So then we can get the liters or gallons per grams of protein.
+### Conversion factors
+cf.m3_t.L_100g <- 0.1  ## cubic meters per metric ton to Liters per 100 grams.
+cf.m3_t.gal_100g <- .026 ## m^3 per m.ton to US liquid gallons per 100 grams. 
+cf.m3_t.gal_oz <- .007489 ## m^3/m.ton to US liq gallons per avoirdupois ounces.
+
+
+
+water[,CA_gal_per_oz:=numeric(.N)]
+water[,G_gal_per_oz:=numeric(.N)]
+water[,CA_L_per_g_protein:=numeric(.N)]
+water[,G_L_per_g_protein:=numeric(.N)]
+water[,CA_gal_per_g_protein:=numeric(.N)]
+water[,G_gal_per_g_protein:=numeric(.N)]
+
+water$CA_gal_per_oz <- cf.m3_t.gal_oz * water$California_footprint
+water$G_gal_per_oz <- cf.m3_t.gal_oz * water$Global_avg_footprint
+water$CA_L_per_g_protein <- cf.m3_t.L_100g * water$California_footprint / water$protein
+water$G_L_per_g_protein <- cf.m3_t.L_100g * water$Global_avg_footprint / water$protein
+water$CA_gal_per_g_protein  <- cf.m3_t.gal_100g * water$California_footprint / water$protein
+water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / water$protein
+
+### Tables and plots
+
+
+
+
+
+
+
+
 
 #### The USDA numbers and descriptions of foods are different
 #### than the water footprint data.
