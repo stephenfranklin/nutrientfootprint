@@ -267,9 +267,79 @@ usda_api_key <- readLines("./usda_api_key.R")
 ## Get a USDA api key and paste it into a file.
 ##      Be sure to end the line with a carriage return.
 nutrients <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=n&sort=n&max=200&api_key=",usda_api_key)) 
-protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
-kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
+n.protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
+n.kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
 groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
+
+
+# write a function that
+#   greps for the first word in the Product column.
+make_unigram <- function(product){
+  product<-as.character(product)
+  thisprod <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
+  thisprod <- sub("s$","",thisprod)
+  thisprod
+} 
+### example:  sapply(animal_s$Products,unigram)
+
+# write a function that:
+#  takes a nutrient and group(s).
+#  returns a nutrient list.
+make_nutrient_list <- function(nutrient, group_id){
+  if(!is.character(group_id)) stop("group_id must be a string, e.g. c(\"0200\")\n")
+  groupids <- paste0("&fg=",group_id[1])
+  for(i in group_id[-1]) {
+    groupids <- paste0(groupids,"&fg=",i)
+  }
+  nutrientlist <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",nutrient,groupids))
+  nutrlist <- nutrientlist$report$foods  ## Drill down to the foods.
+  ## Check for total greater than max:
+  if(nutrientlist$report$total > 1500) {  ## API maxes out at 1500. jerks.
+    reports_needed <- round((nutrientlist$report$total - 1500)/1500,0)
+    for(i in 1:reports_needed){
+      offset <- i*1500
+      nutrlist.N <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&offset=",offset,"&max=1500&nutrients=",nutrient,groupids))
+      nutrlist <- rbind.fill(nutrlist, nutrlist.N$report$foods)
+    }
+  }
+nutrlist.nutr <- rbind.fill(nutrlist$nutrients) ## separate out the nutrient sublist
+nutrlist <- cbind(nutrlist,nutrlist.nutr) ## slap those columns on. 
+nutrlist
+}
+
+## e.g  NN1 <- as.data.table( make_nutrient_list(n.protein,c("1100","0900","2000","1600","1200")) )
+
+# write a function that: 
+#   takes a product, nutrient list, filter (optional), invert filter (optional). 
+#   subsets nutrient list by product + filters, e.g. "raw"
+#   returns the median.
+#   (Use lapply or sapply for a list of products.)
+usda_median <- function(product,nutrient_list,filter1=NULL,filter2=NULL){
+  ## product: char: single word (from make_unigram()).
+  ## nutrient_list: from make_nutrient_list().
+  ## filter1: char: product list will include this string, e.g. "\\braw\\b".
+  ## filter2: char: product list will exclude this string. e.g. "\\bdried\\b".
+  product<-as.character(product)
+  product <- paste0("\\b",product)  ## word boundary
+  productlist <- as.data.table(nutrient_list[grep(product,
+                                                 nutrient_list$name,perl=T,ignore.case=T),])
+  if(!missing(filter1)) {
+    ### e.g. "raw". Keep only raw cuts.
+    if(length( grep(filter1,productlist$name,perl=T,ignore.case=T) ) > 0)
+      productlist <- as.data.table(productlist[grep(filter1,productlist$name,perl=T,ignore.case=T),])
+  }
+  if(!missing(filter2)) {
+    if(length( grep(filter2,productlist$name,perl=T,ignore.case=T) ) > 0)
+      productlist <- productlist[grep(filter2,productlist$name,perl=T,ignore.case=T,invert=T),]
+  }
+  # Finally, return the median.
+  product.med <- as.numeric(median(productlist$gm))
+  #list(product.med, productlist)     ## testing individual
+  #list(product.med, productlist$gm)  ## testing group via lapply
+  product.med
+}
+
+
 
 ### Obtain the median protein for cuts of raw meat.
 ### See 'groups' for good arguments.
@@ -330,6 +400,16 @@ animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
 #View(animal_s)
 # Recall that grams protein is measured per 100 grams of product.
 
+### add plant/animal factor:
+animal_s[,kingdom:=factor(.N)]
+animal_s$kingdom <- factor(animal_s$kingdom,levels = c("plant","animal"))
+animal_s$kingdom <- "animal"  ### note as.numeric "plant" = 1, "animal" = 2
+as.numeric(animal_s$kingdom)
+
+
+
+
+
 ### USDA plant data
 ## These plants aren't easily grepped in a function.
 ## From plants_s with key California_footprint
@@ -351,11 +431,18 @@ plantlist.prot2 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/"
                                    protein,"&fg=",plant_g[1],"&fg=",plant_g[2],"&fg=",plant_g[3],
                                    "&fg=",plant_g[4],"&fg=",plant_g[5]))
 plantlist.prot <- rbind.fill(plantlist.prot1$report$foods,plantlist.prot2$report$foods)
-plantlist.nutr <- rbind.fill(plantlist.prot$nutrients)
-plantlist.prot <- cbind(plantlist.prot,plantlist.nutr)
+plantlist.nutr <- rbind.fill(plantlist.prot$nutrients) ## separate out the nutrient sublist
+plantlist.prot <- cbind(plantlist.prot,plantlist.nutr) ## slap those columns on.
 #View(plantlist.prot)
 
 plants_t[,protein:=numeric(.N)]
+
+### add plant/animal factor:
+plants_t[,kingdom:=factor(.N)]
+plants_t$kingdom <- factor(plants_t$kingdom,levels = c("plant","animal"))
+plants_t$kingdom <- "plant"  ### note as.numeric "plant" = 1, "animal" = 0
+
+
 
 # write a function that:
 #   grep plants_t for the first word in the Product column.
@@ -415,22 +502,116 @@ water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / wat
 
 ### Tables and plots
 
+setkey(water,protein)
+rm(California_footprint, Global_avg_footprint, Products, protein)
+attach(water)
+
+qplot(water, x=water$California_footprint,y=water$protein,
+      color = water$kingdom)
+qplot(water, x=water$Global_avg_footprint,y=water$protein,
+      col = water$kingdom)
 
 
+par(mfrow = c(1,1))
+pairs(water[,c(2,3,4,5,8,9),with=F], panel = panel.smooth, 
+      main = "water footprint data", 
+      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+cor(water$protein,water$California_footprint)
 
+wfit0 <- lm(Global_avg_footprint ~ protein, water)
+summary(wfit0)$r.squared
+summary(wfit0)$coefficients
 
+### Global_avg: We would expect a 390 m3/ton increase in the footprint for each 1 gram increase in protein.
+### The amount of protein in the food explains 61% of the variance in the data.
+### This makes sense because protein synthesis requires water.
+### https://www.youtube.com/watch?v=H8WJ2KENlK0&index=3&list=PL3EED4C1D684D3ADF
+### https://www.youtube.com/watch?v=itsb2SqR-R0&index=11&list=PL3EED4C1D684D3ADF
+### CA: 450 m3/ton increase. r2 is 52%.
+
+### Do animal-based foods have a bigger water footprint than plant-based foods?
+wfit1 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
+summary(wfit1)$r.squared
+summary(wfit1)$coefficients
+### Well, it seems (p-value = 0.01) 
+### there is a somewhat significant increase in the water footprint of 
+### animal-based foods over plant-based foods.
+### But it only explains 13% of the variance.
+
+### Holding protein constant:
+wfit2 <- lm(Global_avg_footprint ~ kingdom + protein, water)
+summary(wfit2)$r.squared
+summary(wfit2)$coefficients
+### It seems protein content is very important in predicting water footprint.
+
+## Examining the interaction between kingdom and protein
+wfit3 <- lm(Global_avg_footprint ~ protein * kingdom, water)
+summary(wfit3)$r.squared
+summary(wfit3)$coefficients
+### The reference category for `kingdom` is "1" -- plants, 
+### which has and intercept of 155 m3/ton. 
+### The slope for *animals* is 416. 
+### The change in intercept for *animals* is 1685.
+### And the change in slope for *animals* is -125.
+
+### The interaction isn't significant (p: 0.3 > 0.05)
+
+### Let's plot the regression lines for animal versus plant sources,
+### with protein as an interaction:
+par(mfrow = c(1,1))
+plot(protein,Global_avg_footprint,pch=19)
+points(protein,Global_avg_footprint,pch=19,col=((as.numeric(kingdom)<2)*1+2))
+## Again, the as.numeric() turns the factor "0" into a 1
+## and the factor "1" into a 2.
+abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
+abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
+### The two food sources seem closely correlated, and that agrees
+### with the interaction being insignificant.
+
+### But let's check the residuals
+par(mfrow = c(1,1))
+ew <- wfit3$residuals 
+plot(kingdom, ew,
+     xlab = "kingdom (0=plant)",
+     ylab = "Residuals")
+
+### compared to fit2
+par(mfrow = c(1,1))
+ew <- wfit2$residuals 
+plot(kingdom, ew,
+     xlab = "kingdom (0=plant)",
+     ylab = "Residuals")
+### Very similar. Lots of outliers in plants.
+
+## resdiuals and leverage
+par(mfrow = c(2, 2))
+plot(wfit3)
+### Three products -- beef, butter, almonds -- have significant leverage in the model. 
+
+### Let's see the model without them:
+par(mfrow = c(1,1))
+plot(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19)
+points(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19,col=((as.numeric(kingdom[c(-12,-45,-46)])<2)*1+2))
+abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
+abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
+### Pretty much the same.
+
+### Analysis of variance to compare the three models:
+anova(wfit0, wfit1, wfit2, wfit3)
+#### anova shows that wfit2 
+#### (predicting the footprint by kingdom holding protein constant)
+#### is the best model.
+
+###  
+library(MASS)
+wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3,4,5),with=F]), trace = 0) 
+summary(fit.s)$coeff
 
 
 
 
 #### The USDA numbers and descriptions of foods are different
 #### than the water footprint data.
-#### The list is just big enough at 71 (+ 36 for the non-CA data) 
-#### that I'm tempted to automate the matching.
-#### Which will involve regex and some algorithm.
-#### That might not be not worth the time.
-#### It might be better to just do it manually.
-#### but then it's not reproducible.
 
 ### e.g. USDA doesn't have "bovine", and a search for "beef"
 ### yields 1154 results with a variety of protein content.
@@ -439,15 +620,3 @@ water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / wat
 ### "name": "Beef, ground, unspecified fat content, cooked",
 ### "ndbno": "23220"  (about 25 g protein)
 ### But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
-### There's also a nutrient list view for which a group 
-### such as "Beef Products" will be listed with their protein content.
-### I could take the median maybe. or take a couple of products.
-
-### And also raw meat has a lower protein content because it has
-### a higher water content.
-### Surely cutting out fat and cooking out water,
-### increases the proportion of protein in that section.
-### So that skews the water footprint.
-### There needs to be some accounting for the portion of 
-### the carcass that is used. So maybe the median is the best option.
-### maybe the median value of just the raw cuts.
