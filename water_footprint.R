@@ -50,7 +50,7 @@ make_nutrient_list <- function(nutrient, group_id){
 }
 ## e.g  NN1 <- as.data.table( make_nutrient_list(n.protein,c("1100","0900","2000","1600","1200")) )
 
-usda_median <- function(product,nutrient_list,filter1=NULL,filter2=NULL){
+usda_median <- function(nutrient_list,product,filter1=NULL,filter2=NULL){
     ## product: char: single word (from make_unigram()).
     ## nutrient_list: from make_nutrient_list().
     ## filter1: char: product list will include this string, e.g. "\\braw\\b".
@@ -115,6 +115,8 @@ if(!file.exists("Report48-Appendix-V.csv")){
     ## file is named "Report48-Appendix-V.xlsx"
     if(!file.exists(name)) unzip("Report48-Appendix-V.zip")
 }
+rm(data)
+rm(name)
 ##!! Use Excel to convert the file to csv. !!##
 
 ##### Plant data -- import data #####
@@ -190,6 +192,10 @@ setkey(Products, "index")
 
 ### Slap in Products
 plants_g$Products<-Products$Product_description_HS
+rm(Products)
+rm(California_footprint)
+rm(Global_avg_footprint)
+rm(wfgroup)
 
 sum(!is.na(plants_g$Product_description_HS))         ## 305
 sum(!is.na(plants_g$Product_description_FAOSTAT))    ## 146
@@ -198,7 +204,10 @@ sum(!is.na(plants_g$Products))                       ## 354 is good.
 
 ### Minimize DT
 plants_cg <- plants_g[,c("Products","California_footprint","Global_avg_footprint"),with=F]
+rm(plants)
 #View(plants_cg)
+
+
 
 ### explore
 setkey(plants_cg,"California_footprint")
@@ -214,6 +223,7 @@ selected_p<- c(354,353,352,351,349,342,335,334,331,329,326,320,319,310,302,297,2
 selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  
     ## nc = Not California: selected from foods that are NA (or 0) for California.
 plants_s <- plants_cg[c(selected_p,selected_nc)]
+rm(plants_g)
 
 setkey(plants_s,"California_footprint")
 qplot(data = tail(plants_s,10), y=Products,x=California_footprint)
@@ -290,6 +300,8 @@ animal_g$US_footprint<-US_footprint$V1
 
 ### Minimize DT and rename to match plants.
 animal_cg <- animal_g[,c("Product_description_HS","US_footprint","Global_avg_footprint"),with=F]
+rm(animal)
+rm(US_footprint)
 ## cg = CA + Global
 ## Note that for lack of more specific data that the California footprint is the US footprint.
 setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint"))
@@ -309,6 +321,7 @@ nonfood <-"live(?!r)|waste|semen|hair|skin|hide|bend|leather"
 ## regex note: (?!x) is the "negative lookahead". 
 animal_cg$food<-!grepl(nonfood, animal_cg$Products, perl=T,ignore.case = T)
 animal_ed <- animal_cg[food==TRUE,]
+rm(animal_g)
 #View(animal_ed)
 
 ### explore
@@ -339,6 +352,7 @@ selected_a<- c(4,5,13,17,22,32,35,36,41,52,60)
 ## Also: why no fish?
 animal_s <- animal_ed[selected_a,1:3,with=F]
 setkey(animal_s,"California_footprint")
+rm(animal_cg)
 qplot(data = animal_s, y=Products,x=California_footprint)
 
 #View(animal_s)
@@ -393,40 +407,10 @@ animal.water.list <- make_nutrient_list(n.water, c("1300","0100","1700","1000","
 animal.fat.list <- make_nutrient_list(n.fat, c("1300","0100","1700","1000","0500"))
 animal.carb.list <- make_nutrient_list(n.carb, c("1300","0100","1700","1000","0500"))
 
+animal_s$protein <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+       filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
 
-usda_median(product,nutrient_list,filter1=NULL,filter2=NULL)
-    
 
-
-beef.protein <- usda_raw_median("beef","\\braw\\b")  ## Bovine.
-pork.protein <- usda_raw_median("pork","\\braw\\b")  ## Swine.
-lamb.protein <- usda_raw_median("lamb","\\braw\\b")  ## Sheep.
-poultry.protein <- usda_raw_median("poultry","\\braw\\b")  ## Fowl.
-egg.protein <- usda_raw_median("egg","\\braw\\b")
-butter.protein <- usda_raw_median("dairy","\\bbutter\\b")
-cheese.protein <- usda_raw_median("dairy","cheese")
-milk.protein <- usda_raw_median("dairy","milk", "\\b(dry|dried|condensed|evaporated)\\b")
-yogurt.protein <- usda_raw_median("dairy","yogurt")
-
-animal_s[,protein:=numeric(.N)]
-animal_s[grep("yogurt",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-yogurt.protein
-animal_s[grep("milk",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-milk.protein
-animal_s[grep("eggs",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-egg.protein
-animal_s[grep("fowl",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-poultry.protein
-animal_s[grep("cheese",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-cheese.protein
-animal_s[grep("butter",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-butter.protein
-animal_s[grep("swine",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-pork.protein
-animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-lamb.protein
-animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
-         ,"protein"]<-beef.protein
 #View(animal_s)
 # Recall that grams protein is measured per 100 grams of product.
 
