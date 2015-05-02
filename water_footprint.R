@@ -7,14 +7,92 @@
 ## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
 ## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
 
+#### LIBRARIES ####
 library(data.table)
 library(ggplot2)
 library(jsonlite)
 library(curl)
 library(plyr)
+
+##### FUNCTIONS #####
+
+make_unigram <- function(product){
+    #  greps for the first word in the Product column.
+    product<-as.character(product)
+    thisprod <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
+    thisprod <- sub("s$","",thisprod)
+    thisprod
+} 
+### example:  sapply(animal_s$Products,unigram)
+
+make_nutrient_list <- function(nutrient, group_id){
+    #  takes a nutrient and group(s).
+    #  returns a nutrient list.
+    if(!is.character(group_id)) stop("group_id must be a string, e.g. c(\"0200\")\n")
+    groupids <- paste0("&fg=",group_id[1])
+    for(i in group_id[-1]) {
+        groupids <- paste0(groupids,"&fg=",i)
+    }
+    nutrientlist <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",nutrient,groupids))
+    nutrlist <- nutrientlist$report$foods  ## Drill down to the foods.
+    ## Check for total greater than max:
+    if(nutrientlist$report$total > 1500) {  ## API maxes out at 1500. jerks.
+        reports_needed <- round((nutrientlist$report$total - 1500)/1500,0)
+        for(i in 1:reports_needed){
+            offset <- i*1500
+            nutrlist.N <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&offset=",offset,"&max=1500&nutrients=",nutrient,groupids))
+            nutrlist <- rbind.fill(nutrlist, nutrlist.N$report$foods)
+        }
+    }
+    nutrlist.nutr <- rbind.fill(nutrlist$nutrients) ## separate out the nutrient sublist
+    nutrlist <- cbind(nutrlist,nutrlist.nutr) ## slap those columns on. 
+    nutrlist
+}
+## e.g  NN1 <- as.data.table( make_nutrient_list(n.protein,c("1100","0900","2000","1600","1200")) )
+
+usda_median <- function(product,nutrient_list,filter1=NULL,filter2=NULL){
+    ## product: char: single word (from make_unigram()).
+    ## nutrient_list: from make_nutrient_list().
+    ## filter1: char: product list will include this string, e.g. "\\braw\\b".
+    ## filter2: char: product list will exclude this string. e.g. "\\bdried\\b".
+    ## Returns the median.
+    product<-as.character(product)
+    product <- paste0("\\b",product)  ## word boundary
+    productlist <- as.data.table(nutrient_list[grep(product,
+                                nutrient_list$name,perl=T,ignore.case=T),])
+    if(!missing(filter1)) {
+        ### e.g. "raw". Keep only raw cuts.
+        if(length( grep(filter1,productlist$name,perl=T,ignore.case=T) ) > 0)
+            productlist <- as.data.table(productlist[grep(filter1,
+                                    productlist$name,perl=T,ignore.case=T),])
+    }
+    if(!missing(filter2)) {
+        if(length( grep(filter2,productlist$name,perl=T,ignore.case=T) ) > 0)
+            productlist <- productlist[grep(filter2,productlist$name,perl=T,
+                                            ignore.case=T,invert=T),]
+    }
+    # Finally, return the median.
+    product.med <- as.numeric(median(productlist$gm))
+    #list(product.med, productlist)     ## testing individual
+    #list(product.med, productlist$gm)  ## testing group via lapply
+    product.med
+}
+
+#### ALIASES ####
+usda_api_key <- readLines("./usda_api_key.R")
+## Get a USDA api key and paste it into a file.
+##      Be sure to end the line with a carriage return.
+usda_groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
+usda_nutrients <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=n&sort=n&max=200&api_key=",usda_api_key)) 
+n.protein <- usda_nutrients$list$item$id[grep("^Protein",usda_nutrients$list$item$name)]
+n.kcal <- usda_nutrients$list$item$id[grep("^Energy",usda_nutrients$list$item$name)][1]
+n.water <- usda_nutrients$list$item$id[grep("^Water",usda_nutrients$list$item$name)]
+n.carb <- usda_nutrients$list$item$id[grep("^Carbohydrate",usda_nutrients$list$item$name)]
+n.fat <- usda_nutrients$list$item$id[grep("lipid",usda_nutrients$list$item$name)]
+
+##### GET DATA #####
 setwd("~/git_folder/water_footprint/")
 
-#### get data ####
 ### plants ###
 data <- "http://waterfootprint.org/media/downloads/Report47-Appendix-II.zip"
 name <- "Report47-Appendix-II.zip"
@@ -25,6 +103,7 @@ if(!file.exists("Report47-Appendix-II.csv")) {
     ## file is named "Report47-Appendix-II.xlsx"
     if(!file.exists(name)) unzip("Report47-Appendix-II.zip")
 }
+##!! Use Excel to convert the file to csv. !!##
 
 ### animals ###
 data <- "http://waterfootprint.org/media/downloads/Report48-Appendix-V.zip"
@@ -36,7 +115,7 @@ if(!file.exists("Report48-Appendix-V.csv")){
     ## file is named "Report48-Appendix-V.xlsx"
     if(!file.exists(name)) unzip("Report48-Appendix-V.zip")
 }
-### Use Excel to convert the files to csv.
+##!! Use Excel to convert the file to csv. !!##
 
 ##### Plant data -- import data #####
 system.time(
@@ -107,8 +186,7 @@ for (i in "Product_description_HS")
     Products[is.na(get(i)), (i) := Products[i,"Product_description_FAOSTAT",with=F]]
 #View(Products)
 setkey(Products, "index")
-##### Note: Important that the order is the same as plants_g. 
-
+##!! Note: Important that the order is the same as plants_g. 
 
 ### Slap in Products
 plants_g$Products<-Products$Product_description_HS
@@ -122,7 +200,7 @@ sum(!is.na(plants_g$Products))                       ## 354 is good.
 plants_cg <- plants_g[,c("Products","California_footprint","Global_avg_footprint"),with=F]
 #View(plants_cg)
 
-#### explore
+### explore
 setkey(plants_cg,"California_footprint")
 qplot(data = tail(plants_cg,10), y=Products,x=California_footprint)
 
@@ -135,11 +213,13 @@ g + xlab("Product") + ylab("water footprint (m^3/ton)")
 selected_p<- c(354,353,352,351,349,342,335,334,331,329,326,320,319,310,302,297,294,289,284,281,279,275,268,266,262,257,256,254,247,246,245,239,235,229,225,224,221,220,218,217,216,215,214,213,212,207,206,205,203,202,199,198,195,186,185,184,183,182,181,176)
 selected_nc <- c(1,14,20,26,28,29,36,40,44,46,47,51,52,55,59,66,69,85,88,96,102,111,112,119,125,126,127,129,137,140,141,143,144,146,147,152)  
     ## nc = Not California: selected from foods that are NA (or 0) for California.
-plants_s <- plants_cg[selected_p]
+plants_s <- plants_cg[c(selected_p,selected_nc)]
 
 setkey(plants_s,"California_footprint")
-qplot(data = tail(plants_s,10), y=Products,x=California_footprint, )
-qplot(data = head(plants_s,10), y=Products,x=California_footprint, )
+qplot(data = tail(plants_s,10), y=Products,x=California_footprint)
+qplot(data = head(plants_s[complete.cases(plants_s)],10), y=Products,x=California_footprint)
+
+# View(plants_s)
 
 
 ##### Animal data -- import data ####
@@ -215,9 +295,9 @@ animal_cg <- animal_g[,c("Product_description_HS","US_footprint","Global_avg_foo
 setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint"))
 #View(animal_cg)
 
-#### explore
+### explore
 setkey(animal_cg,"California_footprint")
-qplot(data = tail(animal_cg,10), y=Products,x=California_footprint, )
+qplot(data = tail(animal_cg,10), y=Products,x=California_footprint)
 
 ## There's some non-food products which we should eliminate, 
 ##          e.g. Semen bovine 1064393    1142704.
@@ -232,141 +312,91 @@ animal_ed <- animal_cg[food==TRUE,]
 #View(animal_ed)
 
 ### explore
-setkey(animal_ed,"California_footprint")
-qplot(data = tail(animal_ed,20), y=Products,x=California_footprint, )
+qplot(data = tail(animal_ed,20), y=Products,x=Global_avg_footprint)
 
 ### Let's narrow the products.
-selected_a<- c(60,57,40,35,32,20,15,11,6) 
-## Note: removing animal_ed[65] as an outlier, though a remarkable one.
+setkey(animal_ed,"Global_avg_footprint") ## to include goat
+selected_a<- c(4,5,13,17,22,32,35,36,41,52,60)
+# Products
+# 1:  Milk not concentrated & unsweetened exceeding 1% not exceeding 6% fat
+# 2: Yogurt concentratd o not,sweetend o not,flavourd o contg fruit o cocoa
+# 3:                                           Milk and cream nes sweetened
+# 4:                       Eggs, bird, in shell, fresh, preserved or cooked
+# 5: Dom fowl,duck,goose&guinea fowl meat&meat offal prep/presvd exc livers
+# 6:                                                             Cheese nes
+# 7:                                    Goat meat, fresh, chilled or frozen
+# 8:                                                                 Butter
+# 9:                                      Swine cuts, fresh or chilled, nes
+# 10:                                 Sheep cuts, boneless, fresh or chilled
+# 11:                                 Bovine cuts boneless, fresh or chilled
+
+##!! Notes:
+## I chose the meats that were described as fresh and boneless.
+## Excluded meats that were offal, liver, or preserved.
+## Excluded animal_ed[65] as an outlier, though a remarkable one.
 ##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317	51779
 ##  Bovine meat cured    21909	23799
 ## Also: why no fish?
 animal_s <- animal_ed[selected_a,1:3,with=F]
 setkey(animal_s,"California_footprint")
-qplot(data = tail(animal_s,20), y=Products,x=California_footprint, )
+qplot(data = animal_s, y=Products,x=California_footprint)
+
+#View(animal_s)
 
 
 
 #### Combine DTs #####
-water <- rbind(plants_s,animal_s)
-setkey(water,California_footprint)
-#nrow(water)  ## 71 items
-#qplot(Products, data=tail(water,20), geom="bar", weight=California_footprint, ylab="footprint (m^3/ton)") + coord_flip()
+waterf <- rbind(plants_s,animal_s)
+setkey(waterf,California_footprint, Global_avg_footprint)
+#nrow(water)  ## 107 Global  ## 71 items for California, 
+#qplot(Products, data=tail(water,20), geom="bar", weight=Global_avg_footprint, ylab="footprint (m^3/ton)") + coord_flip()
 
-g <- ggplot(tail(water,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+g <- ggplot(tail(waterf,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
 g <- g + geom_bar(stat="identity") + coord_flip() 
 g + xlab("Product") + ylab("water footprint (m^3/ton)")
 
-g <- ggplot(head(water,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+g <- ggplot(head(waterf[complete.cases(waterf)],10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
 g <- g + geom_bar(stat="identity") + coord_flip() 
 g + xlab("Product") + ylab("water footprint (m^3/ton)")
 
-
-#### Here we painstakingly wrangle the USDA data.
-usda_api_key <- readLines("./usda_api_key.R")
-## Get a USDA api key and paste it into a file.
-##      Be sure to end the line with a carriage return.
-nutrients <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=n&sort=n&max=200&api_key=",usda_api_key)) 
-n.protein <- nutrients$list$item$id[grep("^Protein",nutrients$list$item$name)]
-n.kcal <- nutrients$list$item$id[grep("^Energy",nutrients$list$item$name)][1]
-groups <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/list?format=json&lt=g&sort=n&max=200&api_key=",usda_api_key))
+##!! Initial observation is that high protein products use the most water.
 
 
-# write a function that
-#   greps for the first word in the Product column.
-make_unigram <- function(product){
-  product<-as.character(product)
-  thisprod <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
-  thisprod <- sub("s$","",thisprod)
-  thisprod
-} 
-### example:  sapply(animal_s$Products,unigram)
-
-# write a function that:
-#  takes a nutrient and group(s).
-#  returns a nutrient list.
-make_nutrient_list <- function(nutrient, group_id){
-  if(!is.character(group_id)) stop("group_id must be a string, e.g. c(\"0200\")\n")
-  groupids <- paste0("&fg=",group_id[1])
-  for(i in group_id[-1]) {
-    groupids <- paste0(groupids,"&fg=",i)
-  }
-  nutrientlist <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",nutrient,groupids))
-  nutrlist <- nutrientlist$report$foods  ## Drill down to the foods.
-  ## Check for total greater than max:
-  if(nutrientlist$report$total > 1500) {  ## API maxes out at 1500. jerks.
-    reports_needed <- round((nutrientlist$report$total - 1500)/1500,0)
-    for(i in 1:reports_needed){
-      offset <- i*1500
-      nutrlist.N <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&offset=",offset,"&max=1500&nutrients=",nutrient,groupids))
-      nutrlist <- rbind.fill(nutrlist, nutrlist.N$report$foods)
-    }
-  }
-nutrlist.nutr <- rbind.fill(nutrlist$nutrients) ## separate out the nutrient sublist
-nutrlist <- cbind(nutrlist,nutrlist.nutr) ## slap those columns on. 
-nutrlist
-}
-
-## e.g  NN1 <- as.data.table( make_nutrient_list(n.protein,c("1100","0900","2000","1600","1200")) )
-
-# write a function that: 
-#   takes a product, nutrient list, filter (optional), invert filter (optional). 
-#   subsets nutrient list by product + filters, e.g. "raw"
-#   returns the median.
-#   (Use lapply or sapply for a list of products.)
-usda_median <- function(product,nutrient_list,filter1=NULL,filter2=NULL){
-  ## product: char: single word (from make_unigram()).
-  ## nutrient_list: from make_nutrient_list().
-  ## filter1: char: product list will include this string, e.g. "\\braw\\b".
-  ## filter2: char: product list will exclude this string. e.g. "\\bdried\\b".
-  product<-as.character(product)
-  product <- paste0("\\b",product)  ## word boundary
-  productlist <- as.data.table(nutrient_list[grep(product,
-                                                 nutrient_list$name,perl=T,ignore.case=T),])
-  if(!missing(filter1)) {
-    ### e.g. "raw". Keep only raw cuts.
-    if(length( grep(filter1,productlist$name,perl=T,ignore.case=T) ) > 0)
-      productlist <- as.data.table(productlist[grep(filter1,productlist$name,perl=T,ignore.case=T),])
-  }
-  if(!missing(filter2)) {
-    if(length( grep(filter2,productlist$name,perl=T,ignore.case=T) ) > 0)
-      productlist <- productlist[grep(filter2,productlist$name,perl=T,ignore.case=T,invert=T),]
-  }
-  # Finally, return the median.
-  product.med <- as.numeric(median(productlist$gm))
-  #list(product.med, productlist)     ## testing individual
-  #list(product.med, productlist$gm)  ## testing group via lapply
-  product.med
-}
+#### Here we painstakingly wrangle the USDA data. ####
+### Change names ###
+#View(animal_s)
+animal_s[grep("yogurt",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"yogurt"
+animal_s[grep("goat",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"goat"
+animal_s[grep("cream",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"cream"
+animal_s[grep("(milk)((?!cream).)*$",animal_s[,Products],ignore.case=T,perl=T)
+         ,"Products"]<-"milk"  ## "((?!word).)*$" negative lookahead for a word to the end of the string.
+animal_s[grep("eggs",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"egg"
+animal_s[grep("fowl",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"poultry"
+animal_s[grep("cheese",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"cheese"
+animal_s[grep("swine",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"pork"
+animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"lamb"
+animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
+         ,"Products"]<-"beef"
 
 
+animal.protein.list <- make_nutrient_list(n.protein, c("1300","0100","1700","1000","0500"))
+animal.kcal.list <- make_nutrient_list(n.kcal, c("1300","0100","1700","1000","0500"))
+animal.water.list <- make_nutrient_list(n.water, c("1300","0100","1700","1000","0500"))
+animal.fat.list <- make_nutrient_list(n.fat, c("1300","0100","1700","1000","0500"))
+animal.carb.list <- make_nutrient_list(n.carb, c("1300","0100","1700","1000","0500"))
 
-### Obtain the median protein for cuts of raw meat.
-### See 'groups' for good arguments.
-### "gm" is grams protein per 100 grams food.
-### product greps for the group number from the groups list.
-### filter1 filters with grep (use "\\b" for a word boundary).
-### filter2 filters the inverse from grep.
-usda_raw_median <- function(product, filter1=NULL,filter2=NULL) {
-    if(!is.character(product)) stop("enter a string, i.e. usda_raw_median(\"beef\").\n")
-    #product.ch <- paste0("^",product)
-    productg <- groups$list$item$id[grep(product,groups$list$item$name, ignore.case = T)]
-    productlist.prot <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/?format=json&api_key=",usda_api_key,"&max=1000&nutrients=",protein,"&fg=",productg))
-    product.prot <- rbind.fill(productlist.prot$report$foods$nutrients)
-    product.foods <- rbind.fill(productlist.prot$report$foods)
-    product.pf <- cbind(product.prot,product.foods)
-    if(!missing(filter1)) {
-    ### e.g. "raw". Keep only raw cuts.
-        product.pf <- as.data.table(product.pf[grep(filter1,product.pf$name,perl=T,ignore.case=T),])
-    }
-    if(!missing(filter2)) {
-        product.pf <- product.pf[grep(filter2,product.pf$name,perl=T,ignore.case=T,invert=T),]
-    }
-    ### Finally, return the median.
-    product.protein <- median(product.pf$gm)
-    product.protein
-    #product.pf
-}
+
+usda_median(product,nutrient_list,filter1=NULL,filter2=NULL)
+    
+
 
 beef.protein <- usda_raw_median("beef","\\braw\\b")  ## Bovine.
 pork.protein <- usda_raw_median("pork","\\braw\\b")  ## Swine.
@@ -411,31 +441,29 @@ as.numeric(animal_s$kingdom)
 
 
 ### USDA plant data
-## These plants aren't easily grepped in a function.
-## From plants_s with key California_footprint
-badgreps <- c(1,9,13,20,21,25,29,31,33,35,36,37,41,42,43,45,46,48,53,54,56)
-length(badgreps)
-
+## These plants aren't *easily* grepped in a function,
+## mostly because the study's names are not similar to the USDA's names.
+## e.g. "aubergines(egg-plants)"
+## Or because the products weren't easy to match.
+## e.g. sugar, coffee, cocoa, and tea are all plants;
+## the USDA lists them as many diverse products, but not as raw plants.
+## *!*!* Also, what does "nes" mean? I'm going with "not explicitly stated".
+badgreps_cali <- c(1,9,13,20,21,25,29,31,33,35,36,37,41,42,43,45,46,48,53,54,56)
+## ...from old version of plants_s with key California_footprint
+badgreps_glob <- c(2,4,5,6,7,9,12,13,14,15,17,18,19,20,24,25,26,27:36)
+## ...from new plants_s which includes product not in California.
+badgreps <- (c(badgreps_cali + 36, badgreps_glob))
 plants_t <- plants_s[-badgreps,]
-View(plants_t)
+## ... that was kind of a waste of effort for only 9 extra observations; that's what I get for trying to be overly inclusive.
+# View(plants_t)
 
 # Get 1 big nutrient list for all relevant groups.
 plant_g <- c("2000","0900","1600","1200","1100")
-plantlist.prot1 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/",
-                "?format=json&api_key=",usda_api_key,"&max=1500&nutrients=",
-                protein,"&fg=",plant_g[1],"&fg=",plant_g[2],"&fg=",plant_g[3],
-                "&fg=",plant_g[4],"&fg=",plant_g[5]))
-plantlist.prot2 <- fromJSON(paste0("http://api.nal.usda.gov/usda/ndb/nutrients/",
-                                   "?format=json&api_key=",usda_api_key,"&max=1500",
-                                   "&offset=1500&nutrients=",
-                                   protein,"&fg=",plant_g[1],"&fg=",plant_g[2],"&fg=",plant_g[3],
-                                   "&fg=",plant_g[4],"&fg=",plant_g[5]))
-plantlist.prot <- rbind.fill(plantlist.prot1$report$foods,plantlist.prot2$report$foods)
-plantlist.nutr <- rbind.fill(plantlist.prot$nutrients) ## separate out the nutrient sublist
-plantlist.prot <- cbind(plantlist.prot,plantlist.nutr) ## slap those columns on.
-#View(plantlist.prot)
 
 plants_t[,protein:=numeric(.N)]
+plants_t[,water:=numeric(.N)]
+plants_t[,fat:=numeric(.N)]
+plants_t[,carbohydrate:=numeric(.N)]
 
 ### add plant/animal factor:
 plants_t[,kingdom:=factor(.N)]
@@ -444,23 +472,7 @@ plants_t$kingdom <- "plant"  ### note as.numeric "plant" = 1, "animal" = 0
 
 
 
-# write a function that:
-#   grep plants_t for the first word in the Product column.
-#   subsets nutrient list by that word + "raw"
-#   returns the median to plants_s$protein.
-# lapply or sapply function to plants_s.
-usda_plants_raw_median <- function(product,nutrient,filter=NULL){
-    ## product: string from which the first word will be taken.
-    ## nutrient: use protein or kcal or sthg from DT nutrients.
-    ## filter: string with which plantlist.prot will be filtered.
-    product<-as.character(product)
-    thisplant <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
-    thisplant <- sub("s$","",thisplant)
-    thisplant <- paste0("\\b",thisplant)
-    plantlist <- as.data.table(plantlist.prot[grep(thisplant,
-                            plantlist.prot$name,perl=T,ignore.case=T),])
-    if(!missing(filter)) {
-        ### e.g. "raw". Keep only raw cuts.
+e.g. "raw". Keep only raw cuts.
         if(length( grep(filter,plantlist$name,perl=T,ignore.case=T) ) > 0)
             plantlist <- as.data.table(plantlist[grep(filter,plantlist$name,perl=T,ignore.case=T),])
     }
