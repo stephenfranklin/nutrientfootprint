@@ -1,11 +1,14 @@
-#### Conversions:
-#### 1000 cubic meters / metric ton
-#### = 120 gallons / pound
-#### = 26.4 gallons / 100 grams  
-#### ~or~ 4000 m3/t = 100 gal / 100 g
+#### water_footprint.R
+#### author: Stephen Franklin
+#### date: 2015 April/May
+#### Description: This program takes two sets of water footprint data 
+####        (for plant-source and animal-source foods) from http://waterfootprint.org/
+####        as well as USDA Nutrient data from http://www.ars.usda.gov/Services/docs.htm?docid=8964
+####        and returns "water_footprint_table.RData".
 
-## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
-## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
+#### License
+#### This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
+#### <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">water_footprint.R</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http:\\stephenfranklin.info" property="cc:attributionName" rel="cc:attributionURL">Stephen Franklin</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br />Based on a work at <a xmlns:dct="http://purl.org/dc/terms/" href="http://waterfootprint.org/en/resources/water-footprint-statistics/" rel="dct:source">http://waterfootprint.org/en/resources/water-footprint-statistics/</a>.<br />Permissions beyond the scope of this license may be available at <a xmlns:cc="http://creativecommons.org/ns#" href="http://www.ars.usda.gov/Services/docs.htm?docid=8964" rel="cc:morePermissions">http://www.ars.usda.gov/Services/docs.htm?docid=8964</a>.
 
 #### LIBRARIES ####
 library(data.table)
@@ -78,7 +81,7 @@ usda_median <- function(nutrient_list,product,filter1=NULL,filter2=NULL){
     product.med
 }
 
-#### ALIASES ####
+#### CONSTANTS and ALIASES ####
 usda_api_key <- readLines("./usda_api_key.R")
 ## Get a USDA api key and paste it into a file.
 ##      Be sure to end the line with a carriage return.
@@ -89,6 +92,11 @@ n.kcal <- usda_nutrients$list$item$id[grep("^Energy",usda_nutrients$list$item$na
 n.water <- usda_nutrients$list$item$id[grep("^Water",usda_nutrients$list$item$name)]
 n.carb <- usda_nutrients$list$item$id[grep("^Carbohydrate",usda_nutrients$list$item$name)]
 n.fat <- usda_nutrients$list$item$id[grep("lipid",usda_nutrients$list$item$name)]
+
+cf.m3_t.L_100g <- 0.1  ## cubic meters per metric ton to Liters per 100 grams.
+cf.m3_t.gal_100g <- .026 ## m^3 per m.ton to US liquid gallons per 100 grams. 
+cf.m3_t.gal_oz <- .007489 ## m^3/m.ton to US liq gallons per avoirdupois ounces.
+
 
 ##### GET DATA #####
 setwd("~/git_folder/water_footprint/")
@@ -232,12 +240,12 @@ qplot(data = head(plants_s[complete.cases(plants_s)],10), y=Products,x=Californi
 # View(plants_s)
 
 
-##### Animal data -- import data ####
+#### Animal data -- import data ####
 
-## Each country column comprises four columns for four Production systems:
-## Grazing    Mixed	Industrial	Weighted average.
-## We want just the weighted averages 
-## for the United States and the World Average.
+##!! Each country column comprises four columns for four Production systems:
+##!! Grazing    Mixed	Industrial	Weighted average.
+##!! We want just the weighted averages 
+##!! for the United States and the World Average.
 
 ## grep("United States",colnames(animal), ignore.case = T)  ## [1] 786 787 788 789
 ## grep("World Average",colnames(animal), ignore.case = T)  ## [1] 10
@@ -354,9 +362,7 @@ animal_s <- animal_ed[selected_a,1:3,with=F]
 setkey(animal_s,"California_footprint")
 rm(animal_cg)
 qplot(data = animal_s, y=Products,x=California_footprint)
-
 #View(animal_s)
-
 
 
 #### Combine DTs #####
@@ -377,7 +383,10 @@ g + xlab("Product") + ylab("water footprint (m^3/ton)")
 
 
 #### Here we painstakingly wrangle the USDA data. ####
-### Change names ###
+
+### USDA Animal Data ###
+
+## Change names ##
 #View(animal_s)
 animal_s[grep("yogurt",animal_s[,Products],ignore.case=T)
          ,"Products"]<-"yogurt"
@@ -409,85 +418,92 @@ animal.carb.list <- make_nutrient_list(n.carb, c("1300","0100","1700","1000","05
 
 animal_s$protein <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
        filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
-
-
-#View(animal_s)
-# Recall that grams protein is measured per 100 grams of product.
+animal.proteins.all <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+                            filter2="\\b(dry|dried|condensed|evaporated)\\b")
+animal_s$carb <- sapply(animal_s$Products,usda_median,nutrient_list=animal.carb.list,
+                        filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
+animal_s$fat <- sapply(animal_s$Products,usda_median,nutrient_list=animal.fat.list,
+                         filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
+animal_s$water <- sapply(animal_s$Products,usda_median,nutrient_list=animal.water.list,
+                         filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
+animal_s$kcal <- sapply(animal_s$Products,usda_median,nutrient_list=animal.kcal.list,
+                        filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
+animal_s$mass <- rowSums(animal_s[, c("protein","carb","fat","water"),with=F])
+#quantile(animal_s$mass)
+    ### The mass should be close to 100,
+    ### as the nutrients are measured in grams per 100 grams of product.
 
 ### add plant/animal factor:
 animal_s[,kingdom:=factor(.N)]
 animal_s$kingdom <- factor(animal_s$kingdom,levels = c("plant","animal"))
 animal_s$kingdom <- "animal"  ### note as.numeric "plant" = 1, "animal" = 2
 as.numeric(animal_s$kingdom)
+#View(animal_s)
 
 
-
-
-
-### USDA plant data
+### USDA plant data ####
 ## These plants aren't *easily* grepped in a function,
 ## mostly because the study's names are not similar to the USDA's names.
-## e.g. "aubergines(egg-plants)"
-## Or because the products weren't easy to match.
+## e.g. "aubergines(egg-plants)" vs. "eggplants"
+## Or because the products themselves weren't easy to match.
 ## e.g. sugar, coffee, cocoa, and tea are all plants;
 ## the USDA lists them as many diverse products, but not as raw plants.
-## *!*!* Also, what does "nes" mean? I'm going with "not explicitly stated".
+## *!*!* Also, what does "nes" mean? ... I'm going with "not explicitly stated".
 badgreps_cali <- c(1,9,13,20,21,25,29,31,33,35,36,37,41,42,43,45,46,48,53,54,56)
 ## ...from old version of plants_s with key California_footprint
 badgreps_glob <- c(2,4,5,6,7,9,12,13,14,15,17,18,19,20,24,25,26,27:36)
 ## ...from new plants_s which includes product not in California.
 badgreps <- (c(badgreps_cali + 36, badgreps_glob))
 plants_t <- plants_s[-badgreps,]
+rm(plants_cg)
 ## ... that was kind of a waste of effort for only 9 extra observations; that's what I get for trying to be overly inclusive.
 # View(plants_t)
 
 # Get 1 big nutrient list for all relevant groups.
 plant_g <- c("2000","0900","1600","1200","1100")
 
-plants_t[,protein:=numeric(.N)]
-plants_t[,water:=numeric(.N)]
-plants_t[,fat:=numeric(.N)]
-plants_t[,carbohydrate:=numeric(.N)]
+### Change names ###
+plants_t$Products <- sapply(plants_t$Products,make_unigram)
 
-### add plant/animal factor:
+### Make nutrients lists ###
+plant.protein.list <- make_nutrient_list(n.protein, plant_g)
+plant.kcal.list <- make_nutrient_list(n.kcal, plant_g)
+plant.water.list <- make_nutrient_list(n.water, plant_g)
+plant.fat.list <- make_nutrient_list(n.fat, plant_g)
+plant.carb.list <- make_nutrient_list(n.carb, plant_g)
+
+### nutrient medians ###
+plants_t$protein <- sapply(plants_t$Products,usda_median,nutrient_list=plant.protein.list,
+                           filter1="\\braw\\b")
+plants_t$carb <- sapply(plants_t$Products,usda_median,nutrient_list=plant.carb.list,
+                        filter1="\\braw\\b")
+plants_t$fat <- sapply(plants_t$Products,usda_median,nutrient_list=plant.fat.list,
+                       filter1="\\braw\\b")
+plants_t$water <- sapply(plants_t$Products,usda_median,nutrient_list=plant.water.list,
+                         filter1="\\braw\\b")
+plants_t$kcal <- sapply(plants_t$Products,usda_median,nutrient_list=plant.kcal.list,
+                        filter1="\\braw\\b")
+plants_t$mass <- rowSums(plants_t[, c("protein","carb","fat","water"),with=F])
+#quantile(plants_t$mass)  ## should be near 100.
+
+### add plant/animal factor ###
 plants_t[,kingdom:=factor(.N)]
 plants_t$kingdom <- factor(plants_t$kingdom,levels = c("plant","animal"))
 plants_t$kingdom <- "plant"  ### note as.numeric "plant" = 1, "animal" = 0
 
 
 
-e.g. "raw". Keep only raw cuts.
-        if(length( grep(filter,plantlist$name,perl=T,ignore.case=T) ) > 0)
-            plantlist <- as.data.table(plantlist[grep(filter,plantlist$name,perl=T,ignore.case=T),])
-    }
-    ### Finally, return the median.
-    product.protein <- as.numeric(median(plantlist$gm))
-    #list(product.protein, plantlist)     ## testing individual
-    #list(product.protein, plantlist$gm)  ## testing group via lapply
-    product.protein
-}
-
-plants_t$protein <- lapply(plants_t$Products,usda_plants_raw_median,protein,"\\braw\\b")
-
-### Combine plants_t and animal_s
+#### Combine plants_t and animal_s ####
 water <- as.data.table(rbind.fill(plants_t,animal_s))
-setkey(water,California_footprint)
-water$protein <- as.numeric(water$protein)
+setkey(water,California_footprint,Global_avg_footprint)
+rm(waterf)
+rm(animal_ed)
+rm(plants_s)
 
-
-### Conversion factors
-cf.m3_t.L_100g <- 0.1  ## cubic meters per metric ton to Liters per 100 grams.
-cf.m3_t.gal_100g <- .026 ## m^3 per m.ton to US liquid gallons per 100 grams. 
-cf.m3_t.gal_oz <- .007489 ## m^3/m.ton to US liq gallons per avoirdupois ounces.
-
-
-
-water[,CA_gal_per_oz:=numeric(.N)]
-water[,G_gal_per_oz:=numeric(.N)]
-water[,CA_L_per_g_protein:=numeric(.N)]
-water[,G_L_per_g_protein:=numeric(.N)]
-water[,CA_gal_per_g_protein:=numeric(.N)]
-water[,G_gal_per_g_protein:=numeric(.N)]
+### Conversion factors ###
+# cf.m3_t.L_100g    <- 0.1      ## cubic meters per metric ton to Liters per 100 grams.
+# cf.m3_t.gal_100g  <- .026     ## m^3 per m.ton to US liquid gallons per 100 grams. 
+# cf.m3_t.gal_oz    <- .007489  ## m^3/m.ton to US liq gallons per avoirdupois ounces.
 
 water$CA_gal_per_oz <- cf.m3_t.gal_oz * water$California_footprint
 water$G_gal_per_oz <- cf.m3_t.gal_oz * water$Global_avg_footprint
@@ -496,7 +512,10 @@ water$G_L_per_g_protein <- cf.m3_t.L_100g * water$Global_avg_footprint / water$p
 water$CA_gal_per_g_protein  <- cf.m3_t.gal_100g * water$California_footprint / water$protein
 water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / water$protein
 
-### Tables and plots
+save(water,file = "water_footprint_table.RData")
+
+
+#### Tables and plots ####
 
 setkey(water,protein)
 rm(California_footprint, Global_avg_footprint, Products, protein)
@@ -616,3 +635,5 @@ summary(fit.s)$coeff
 ### "name": "Beef, ground, unspecified fat content, cooked",
 ### "ndbno": "23220"  (about 25 g protein)
 ### But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
+
+
