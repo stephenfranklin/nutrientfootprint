@@ -23,7 +23,7 @@ make_unigram <- function(product){
     #  greps for the first word in the Product column.
     product<-as.character(product)
     thisprod <- unlist( strsplit(product,"[^a-zA-Z]",perl=T) )[1]
-    thisprod <- sub("s$","",thisprod)
+    thisprod <- sub("(?<!ie|oe)s$","",thisprod, perl=T)
     thisprod
 } 
 ### example:  sapply(animal_s$Products,unigram)
@@ -219,11 +219,11 @@ rm(plants)
 
 ### explore
 setkey(plants_cg,"California_footprint")
-qplot(data = tail(plants_cg,10), y=Products,x=California_footprint)
+#qplot(data = tail(plants_cg,10), y=Products,x=California_footprint)
 
-g <- ggplot(head(na.omit(plants_cg),10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
-g <- g + geom_bar(stat="identity") + coord_flip() 
-g + xlab("Product") + ylab("water footprint (m^3/ton)")
+#g <- ggplot(head(na.omit(plants_cg),10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+#g <- g + geom_bar(stat="identity") + coord_flip() 
+#g + xlab("Product") + ylab("water footprint (m^3/ton)")
 #View(plants_cg)
 
 ### Let's narrow the products.
@@ -234,8 +234,8 @@ plants_s <- plants_cg[c(selected_p,selected_nc)]
 rm(plants_g)
 
 setkey(plants_s,"California_footprint")
-qplot(data = tail(plants_s,10), y=Products,x=California_footprint)
-qplot(data = head(plants_s[complete.cases(plants_s)],10), y=Products,x=California_footprint)
+#qplot(data = tail(plants_s,10), y=Products,x=California_footprint)
+#qplot(data = head(plants_s[complete.cases(plants_s)],10), y=Products,x=California_footprint)
 
 # View(plants_s)
 
@@ -317,7 +317,7 @@ setnames(animal_cg, c("Products","California_footprint", "Global_avg_footprint")
 
 ### explore
 setkey(animal_cg,"California_footprint")
-qplot(data = tail(animal_cg,10), y=Products,x=California_footprint)
+#qplot(data = tail(animal_cg,10), y=Products,x=California_footprint)
 
 ## There's some non-food products which we should eliminate, 
 ##          e.g. Semen bovine 1064393    1142704.
@@ -333,7 +333,7 @@ rm(animal_g)
 #View(animal_ed)
 
 ### explore
-qplot(data = tail(animal_ed,20), y=Products,x=Global_avg_footprint)
+#qplot(data = tail(animal_ed,20), y=Products,x=Global_avg_footprint)
 
 ### Let's narrow the products.
 setkey(animal_ed,"Global_avg_footprint") ## to include goat
@@ -361,7 +361,7 @@ selected_a<- c(4,5,13,17,22,32,35,36,41,52,60)
 animal_s <- animal_ed[selected_a,1:3,with=F]
 setkey(animal_s,"California_footprint")
 rm(animal_cg)
-qplot(data = animal_s, y=Products,x=California_footprint)
+#qplot(data = animal_s, y=Products,x=California_footprint)
 #View(animal_s)
 
 
@@ -371,13 +371,13 @@ setkey(waterf,California_footprint, Global_avg_footprint)
 #nrow(water)  ## 107 Global  ## 71 items for California, 
 #qplot(Products, data=tail(water,20), geom="bar", weight=Global_avg_footprint, ylab="footprint (m^3/ton)") + coord_flip()
 
-g <- ggplot(tail(waterf,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
-g <- g + geom_bar(stat="identity") + coord_flip() 
-g + xlab("Product") + ylab("water footprint (m^3/ton)")
+#g <- ggplot(tail(waterf,10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+#g <- g + geom_bar(stat="identity") + coord_flip() 
+#g + xlab("Product") + ylab("water footprint (m^3/ton)")
 
-g <- ggplot(head(waterf[complete.cases(waterf)],10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
-g <- g + geom_bar(stat="identity") + coord_flip() 
-g + xlab("Product") + ylab("water footprint (m^3/ton)")
+#g <- ggplot(head(waterf[complete.cases(waterf)],10), aes(x=reorder(Products,-California_footprint), y=California_footprint))
+#g <- g + geom_bar(stat="identity") + coord_flip() 
+#g + xlab("Product") + ylab("water footprint (m^3/ton)")
 
 ##!! Initial observation is that high protein products use the most water.
 
@@ -409,6 +409,12 @@ animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
 animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
          ,"Products"]<-"beef"
 
+# Unfortunately, we get paltry results from "poultry" as search term for the USDA lists.
+poultry <- data.table(Products=c("chicken","turkey","duck"),
+                      animal_s[Products=="poultry", .(California_footprint)],
+                      animal_s[Products=="poultry", .(Global_avg_footprint)])
+animal_s <- rbind(animal_s,poultry)
+animal_s <- animal_s[(Products!="poultry")]
 
 animal.protein.list <- make_nutrient_list(n.protein, c("1300","0100","1700","1000","0500"))
 animal.kcal.list <- make_nutrient_list(n.kcal, c("1300","0100","1700","1000","0500"))
@@ -428,7 +434,7 @@ animal_s$water <- sapply(animal_s$Products,usda_median,nutrient_list=animal.wate
                          filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
 animal_s$kcal <- sapply(animal_s$Products,usda_median,nutrient_list=animal.kcal.list,
                         filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
-animal_s$mass <- rowSums(animal_s[, c("protein","carb","fat","water"),with=F])
+animal_s$mass <- rowSums(animal_s[, .(protein,carb,fat,water)])
 #quantile(animal_s$mass)
     ### The mass should be close to 100,
     ### as the nutrients are measured in grams per 100 grams of product.
@@ -517,25 +523,37 @@ save(water,file = "water_footprint_table.RData")
 
 #### Tables and plots ####
 
-setkey(water,protein)
-rm(California_footprint, Global_avg_footprint, Products, protein)
-attach(water)
-
-qplot(water, x=water$California_footprint,y=water$protein,
-      color = water$kingdom)
-qplot(water, x=water$Global_avg_footprint,y=water$protein,
-      col = water$kingdom)
+#setkey(water,protein)
+#rm(California_footprint, Global_avg_footprint, Products, protein)
+#attach(water)
 
 
-par(mfrow = c(1,1))
-pairs(water[,c(2,3,4,5,8,9),with=F], panel = panel.smooth, 
-      main = "water footprint data", 
-      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-cor(water$protein,water$California_footprint)
+#p <- qplot(water, x=California_footprint,y=protein,
+#      col = kingdom) 
+#p + scale_colour_manual(values=c("green4", "darkred"))
 
-wfit0 <- lm(Global_avg_footprint ~ protein, water)
-summary(wfit0)$r.squared
-summary(wfit0)$coefficients
+#plot(water, x=Global_avg_footprint,y=protein,
+#      col = kingdom) + scale_colour_manual(values=c("green4", "darkred"))
+
+#p <- ggplot( water, aes(x=Global_avg_footprint, y=protein, 
+#    colour=factor(kingdom)) )
+#p + geom_point() + scale_colour_manual(values=c("green4", "darkred"))
+
+
+
+# par(mfrow = c(1,1))
+# pairs(water[,c(2:8),with=F], panel = panel.smooth, 
+#       main = "water footprint data", 
+#       col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+# cor(Global_avg_footprint, water$protein)
+# cor(complete.cases(California_footprint),protein)
+# is.(water$California_footprint)
+# 
+# ggpairs(water[,c(3:6),with=F],colours=water$kingdom, alpha=1) scale_colour_manual(values=c("green4", "darkred"))
+# 
+# wfit0 <- lm(Global_avg_footprint ~ protein + fat + water + carb + kcal + kingdom, water)
+# summary(wfit0)$r.squared
+# summary(wfit0)$coefficients
 
 ### Global_avg: We would expect a 390 m3/ton increase in the footprint for each 1 gram increase in protein.
 ### The amount of protein in the food explains 61% of the variance in the data.
@@ -545,24 +563,24 @@ summary(wfit0)$coefficients
 ### CA: 450 m3/ton increase. r2 is 52%.
 
 ### Do animal-based foods have a bigger water footprint than plant-based foods?
-wfit1 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
-summary(wfit1)$r.squared
-summary(wfit1)$coefficients
-### Well, it seems (p-value = 0.01) 
-### there is a somewhat significant increase in the water footprint of 
-### animal-based foods over plant-based foods.
-### But it only explains 13% of the variance.
-
-### Holding protein constant:
-wfit2 <- lm(Global_avg_footprint ~ kingdom + protein, water)
-summary(wfit2)$r.squared
-summary(wfit2)$coefficients
-### It seems protein content is very important in predicting water footprint.
-
-## Examining the interaction between kingdom and protein
-wfit3 <- lm(Global_avg_footprint ~ protein * kingdom, water)
-summary(wfit3)$r.squared
-summary(wfit3)$coefficients
+# wfit1 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
+# summary(wfit1)$r.squared
+# summary(wfit1)$coefficients
+# ### Well, it seems (p-value = 0.01) 
+# ### there is a somewhat significant increase in the water footprint of 
+# ### animal-based foods over plant-based foods.
+# ### But it only explains 13% of the variance.
+# 
+# ### Holding protein constant:
+# wfit2 <- lm(Global_avg_footprint ~ kingdom + protein, water)
+# summary(wfit2)$r.squared
+# summary(wfit2)$coefficients
+# ### It seems protein content is very important in predicting water footprint.
+# 
+# ## Examining the interaction between kingdom and protein
+# wfit3 <- lm(Global_avg_footprint ~ protein * kingdom, water)
+# summary(wfit3)$r.squared
+# summary(wfit3)$coefficients
 ### The reference category for `kingdom` is "1" -- plants, 
 ### which has and intercept of 155 m3/ton. 
 ### The slope for *animals* is 416. 
@@ -573,55 +591,55 @@ summary(wfit3)$coefficients
 
 ### Let's plot the regression lines for animal versus plant sources,
 ### with protein as an interaction:
-par(mfrow = c(1,1))
-plot(protein,Global_avg_footprint,pch=19)
-points(protein,Global_avg_footprint,pch=19,col=((as.numeric(kingdom)<2)*1+2))
-## Again, the as.numeric() turns the factor "0" into a 1
-## and the factor "1" into a 2.
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### The two food sources seem closely correlated, and that agrees
-### with the interaction being insignificant.
-
-### But let's check the residuals
-par(mfrow = c(1,1))
-ew <- wfit3$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-
-### compared to fit2
-par(mfrow = c(1,1))
-ew <- wfit2$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-### Very similar. Lots of outliers in plants.
-
-## resdiuals and leverage
-par(mfrow = c(2, 2))
-plot(wfit3)
-### Three products -- beef, butter, almonds -- have significant leverage in the model. 
-
-### Let's see the model without them:
-par(mfrow = c(1,1))
-plot(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19)
-points(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19,col=((as.numeric(kingdom[c(-12,-45,-46)])<2)*1+2))
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### Pretty much the same.
-
-### Analysis of variance to compare the three models:
-anova(wfit0, wfit1, wfit2, wfit3)
-#### anova shows that wfit2 
-#### (predicting the footprint by kingdom holding protein constant)
-#### is the best model.
-
-###  
-library(MASS)
-wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3,4,5),with=F]), trace = 0) 
-summary(fit.s)$coeff
-
+# par(mfrow = c(1,1))
+# plot(protein,Global_avg_footprint,pch=19)
+# points(protein,Global_avg_footprint,pch=19,col=((as.numeric(kingdom)<2)*1+2))
+# ## Again, the as.numeric() turns the factor "0" into a 1
+# ## and the factor "1" into a 2.
+# abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
+# abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
+# ### The two food sources seem closely correlated, and that agrees
+# ### with the interaction being insignificant.
+# 
+# ### But let's check the residuals
+# par(mfrow = c(1,1))
+# ew <- wfit3$residuals 
+# plot(kingdom, ew,
+#      xlab = "kingdom (0=plant)",
+#      ylab = "Residuals")
+# 
+# ### compared to fit2
+# par(mfrow = c(1,1))
+# ew <- wfit2$residuals 
+# plot(kingdom, ew,
+#      xlab = "kingdom (0=plant)",
+#      ylab = "Residuals")
+# ### Very similar. Lots of outliers in plants.
+# 
+# ## resdiuals and leverage
+# par(mfrow = c(2, 2))
+# plot(wfit3)
+# ### Three products -- beef, butter, almonds -- have significant leverage in the model. 
+# 
+# ### Let's see the model without them:
+# par(mfrow = c(1,1))
+# plot(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19)
+# points(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19,col=((as.numeric(kingdom[c(-12,-45,-46)])<2)*1+2))
+# abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
+# abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
+# ### Pretty much the same.
+# 
+# ### Analysis of variance to compare the three models:
+# anova(wfit0, wfit1, wfit2, wfit3)
+# #### anova shows that wfit2 
+# #### (predicting the footprint by kingdom holding protein constant)
+# #### is the best model.
+# 
+# ###  
+# library(MASS)
+# wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3:8),with=F]), trace = 0) 
+# summary(wfit.s)$coeff
+# summary(wfit.s)$r.squared
 
 
 

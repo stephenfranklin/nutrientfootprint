@@ -1,5 +1,5 @@
 ---
-title: "Water Footprint Nutritional Efficiency"
+title: "Will eating less almonds save water? Probably. What else?"
 author: "Stephen Franklin"
 date: "May 2, 2015"
 output: html_document
@@ -7,21 +7,180 @@ license: <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
 
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r libraries, echo=FALSE, message=F}
+library(data.table)
+library(ggplot2)
+library(jsonlite)
+library(curl)
+library(plyr)
+```
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+---
+
+```{r, plot_pro_v_foot, echo=F}
+load("water_footprint_table.RData")
+library(ggplot2)
+
+w1 <- qplot(data = water, x= Global_avg_footprint, y= protein, col = kingdom) + scale_colour_manual(values=c("green4", "darkred"))
+
+w1 + geom_text(aes(label=Products), size=3)
+
+```
+
+
 
 ```{r}
-summary(cars)
+par(mfrow = c(1,1))
+pairs(water[,c(3:7),with=F], panel = panel.smooth, 
+      main = "water footprint data", 
+      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
 ```
 
-You can also embed plots, for example:
 
-```{r, echo=FALSE}
-plot(cars)
+```{r, echo=F}
+require(rCharts)
+
+w2 <- nPlot(Global_avg_footprint ~ protein, 
+            group = 'kingdom', 
+            data= water, 
+            type= 'scatterChart')
+w2$chart(color = c("green", "darkred")) 
+w2$chart(tooltipContent = "#! function(key, x, y, e){ 
+  return e.point.Products
+} !#")
+w2$set(title = "Water Footprint vs. Protein")
+w2
+
+p1 <- nPlot(length ~ votes,
+            group = 'mpaa', 
+            data = movies, 
+            type = 'scatterChart')
+p1$chart(tooltipContent = "#! function(key, x, y, e){ 
+  return key + ' ' + e.point.year
+} !#")
+p1$print("chart3")
+p1
+
+
+require(Lahman)  
+require(plyr)
+dat = Teams[,c('yearID', 'name', 'G', 'SO')]
+team_data = na.omit(transform(dat, SOG = round(SO/G, 2)))
+league_data = ddply(team_data, .(yearID), summarize, SOG = mean(SOG))
+
+require(rCharts)
+p1 <- rPlot(SOG ~ yearID, data = team_data, type = 'point', 
+  size = list(const = 2), color = list(const = '#888'), 
+  tooltip="function(item){return item.SOG +'\n' + item.name + '\n' + item.yearID}"
+)
+p1
+
+w2$chart(
+    tooltipContent = '#! function(x,y,e,graph){
+      return d3.entries(graph.point).map(function(key){
+            return key.key +  \': \' +  key.value;
+        }).join(\',\');
+    } !#'
+)
+w2$chart(tooltipContent = "#! function(key, x, y){ 
+  return 'x: ' + x + '  y: ' + y 
+} !#")
+
+w3 <- rPlot(Global_avg_footprint ~ protein, 
+            color = 'kingdom', 
+            data= water, 
+            type= 'point',
+            tooltip = "#! function(item){
+                    return item.Products
+                } !#")
+w3$guides(color = list(scale = "#! function(value){
+      color_mapping = {plant: 'green', animal: 'darkred'}
+      return color_mapping[value];                  
+    } !#"))
+w3$set(title = "Water Footprint vs. Protein")
+w3
+
+
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+---
+
+
+Discuss how we've heard that almonds are water intensive crops. And that meat even moreso.
+
+barplot CA water footprint 10 highest.
+
+Discuss how animal-based food does appear to be very water intensive, but not exclusively so.
+
+Discuss where this data comes from, and how they are missing alfalfa (even though people do eat alfalfa) and other fodder crops (hay). Show quote where the researchers explain that they're including fodder in their meat estimates.
+
+---
+
+"The water footprint of a live animal consists of
+different components: the indirect water footprint
+of the feed and the direct water footprint related to
+the drinking water and service water consumed. . . The water footprint of an animal related to the
+feed consumed consists of two parts: the water
+footprint of the various feed ingredients and the
+water that is used to mix the feed."
+
+http://waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2012-WaterFootprintFarmAnimalProducts.pdf pp2-3 (pp402-3 as labeled) 
+
+---
+Total outputs of CAlifornia
+
+
+In 2013, California produced approximately
+7.96 million tons of alfalfa hay, valued at
+$1.57 billion. --http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFieldCrops.pdf page 13
+
+---
+2013: top CA commodities
+Milk and Cream  7,617,641,000  almost 21 percent of the nation's milk supply. Asian markets imported 53 percent of US dairy exports in 2013
+Almonds         5,768,100,000    99% of the nation
+Grapes          5,585,584,000    leads the nation
+Cattle & Calves 3,048,390,000    
+meat animal     3,088,751,000
+
+milk and cream      41,256,000,000 *lbs*    $7,617,641,000  1
+almonds (shelled)   1,005,000 short tons    $5,768,100,000
+grapes              7,717,000 sh.tons       $5,585,584,000
+cattle & calves     2,039,468,000 *lbs*     $3,048,390,000
+Strawberries        1,378,000 sh.tons       $2,200,729,000
+Walnuts             492,000 sh.tons         $1,795,800,000
+Lettuce             2,987.70 sh.tons        $1,679,164,000
+hay, alfalfa, etc   7,956,000  sh.tons      $1,569,780,000  8
+tomatoes            12,520,000 sh.tons      $1,222,470,000  9
+...
+corn for silage     10,998,000 sh.tons      $530,434,000
+corn for grain      962,640 sh.tons         $183,245,000
+beans, dry          1,150,000 cwt           $65,320,000
+(cwt is hundredweight: 100 lbs)
+
+add others, depending on their low footprint/protein.
+
+http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CA_Ag_Overview.pdf
+
+---
+general source for CA 2013 yields: 
+http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/index.asp
+---
+
+We could show how CA is more efficient than the global average on almonds and less efficient on other crops.
+
+plot of greatest (non-absolute) difference of water footprint between CA and Global average on some sort of centered bar plot where the bar extends out left/right from the center.
+ 
+---
+
+scatterplot CA protein vs water footprint with labels or text.
+
+interactive version of the same.
+
+---
 
 
 
@@ -96,6 +255,8 @@ animal_cg[,food:=logical(.N)]
 ## ... that was kind of a waste of effort for only 9 extra observations; that's what I get for trying to be overly inclusive.
 
 
+models!
+
 
 
     
@@ -107,11 +268,10 @@ animal_cg[,food:=logical(.N)]
 
 setkey(water,protein)
 rm(California_footprint, Global_avg_footprint, Products, protein)
-attach(water)
 
-qplot(water, x=water$California_footprint,y=water$protein,
+qplot(data=water, x=water$California_footprint,y=water$protein,
       color = water$kingdom)
-qplot(water, x=water$Global_avg_footprint,y=water$protein,
+qplot(data=water, x=water$Global_avg_footprint,y=water$protein,
       col = water$kingdom)
 
 
