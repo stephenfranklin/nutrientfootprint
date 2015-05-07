@@ -13,19 +13,30 @@ library(ggplot2)
 library(jsonlite)
 library(curl)
 library(plyr)
+library(rCharts)
+load("water_footprint_table.RData")
 ```
 
 
 ---
 
 ```{r, plot_pro_v_foot, echo=F}
-load("water_footprint_table.RData")
-library(ggplot2)
+### protein vs global_avg_footprint
+### NON-interactive
+w1 <- ggplot(data=water, aes(x = Global_avg_footprint, y = protein, color=kingdom)) +   
+        geom_point(data = subset(water, protein <= 3 & Global_avg_footprint < 3000)) 
+w1 <- w1 + geom_text(aes(label=ifelse(
+                                protein > 3 | 
+                                Global_avg_footprint > 3000, 
+                                Products,'')), hjust=0,just=0, size=3)
+w1 <- w1 + scale_color_manual(values=c("darkred", "green4")) + 
+    geom_smooth(data = water, method="lm", fullrange=TRUE)
+w1 <- w1 +  xlab("Water Footprint: Global Average ($m^3/ton$") +
+    ylab("Protein (%)") +
+    ggtitle("Water Footprint vs. Protein of Raw Foods") + 
+    guides(fill=guide_legend(title=NULL)
 
-w1 <- qplot(data = water, x= Global_avg_footprint, y= protein, col = kingdom) + scale_colour_manual(values=c("green4", "darkred"))
-
-w1 + geom_text(aes(label=Products), size=3)
-
+w1
 ```
 
 
@@ -35,6 +46,30 @@ par(mfrow = c(1,1))
 pairs(water[,c(3:7),with=F], panel = panel.smooth, 
       main = "water footprint data", 
       col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+pairs(USJudgeRatings[,1:4], lower.panel = panel.smooth, upper.panel = panel.cor)
+
+pairs(water[,c(3:7),with=F], lower.panel = panel.smooth, upper.panel = panel.cor,
+      main = "water footprint data", 
+      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+
+
+
+
+
+
+
 ```
 
 
@@ -52,40 +87,6 @@ w2$chart(tooltipContent = "#! function(key, x, y, e){
 w2$set(title = "Water Footprint vs. Protein")
 w2
 
-p1 <- nPlot(length ~ votes,
-            group = 'mpaa', 
-            data = movies, 
-            type = 'scatterChart')
-p1$chart(tooltipContent = "#! function(key, x, y, e){ 
-  return key + ' ' + e.point.year
-} !#")
-p1$print("chart3")
-p1
-
-
-require(Lahman)  
-require(plyr)
-dat = Teams[,c('yearID', 'name', 'G', 'SO')]
-team_data = na.omit(transform(dat, SOG = round(SO/G, 2)))
-league_data = ddply(team_data, .(yearID), summarize, SOG = mean(SOG))
-
-require(rCharts)
-p1 <- rPlot(SOG ~ yearID, data = team_data, type = 'point', 
-  size = list(const = 2), color = list(const = '#888'), 
-  tooltip="function(item){return item.SOG +'\n' + item.name + '\n' + item.yearID}"
-)
-p1
-
-w2$chart(
-    tooltipContent = '#! function(x,y,e,graph){
-      return d3.entries(graph.point).map(function(key){
-            return key.key +  \': \' +  key.value;
-        }).join(\',\');
-    } !#'
-)
-w2$chart(tooltipContent = "#! function(key, x, y){ 
-  return 'x: ' + x + '  y: ' + y 
-} !#")
 
 w3 <- rPlot(Global_avg_footprint ~ protein, 
             color = 'kingdom', 
@@ -101,9 +102,15 @@ w3$guides(color = list(scale = "#! function(value){
 w3$set(title = "Water Footprint vs. Protein")
 w3
 
+```
 
 
-
+```{r}
+ggplot(bar) + 
+  geom_bar(aes(variable, `(all)`, fill = ustanova), position = "dodge") +
+  geom_text(aes(variable, `(all)`, label = sprintf("%2.1f", `(all)`)), 
+            position = position_dodge(width=1)) + 
+  coord_flip()
 ```
 
 
