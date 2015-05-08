@@ -1,111 +1,101 @@
 ---
-title: "Will eating less almonds save water? Probably. What else?"
+title: "The Healthiest Water-Efficient Foods."
 author: "Stephen Franklin"
 date: "May 2, 2015"
 output: html_document
-license: <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">Water Footprint Nutritional Efficiency</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http:\\stephenfranklin.info" property="cc:attributionName" rel="cc:attributionURL">Stephen Franklin</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br />Based on a work at <a xmlns:dct="http://purl.org/dc/terms/" href="http://waterfootprint.org/en/resources/water-footprint-statistics/" rel="dct:source">http://waterfootprint.org/en/resources/water-footprint-statistics/</a>.<br />Permissions beyond the scope of this license may be available at <a xmlns:cc="http://creativecommons.org/ns#" href="http://www.ars.usda.gov/Services/docs.htm?docid=8964" rel="cc:morePermissions">http://www.ars.usda.gov/Services/docs.htm?docid=8964</a>.
-
 ---
 
 ```{r libraries, echo=FALSE, message=F}
+require(knitr)
 library(data.table)
 library(ggplot2)
 library(jsonlite)
 library(curl)
 library(plyr)
 library(rCharts)
+library(psych)
 load("water_footprint_table.RData")
+```
+
+```{r setup, cache = F}
+#options(rcharts.mode = 'iframe', rcharts.cdn = TRUE) 
+#knitr::opts_chunk$set(results = "asis", comment = NA)
 ```
 
 
 ---
 
-```{r, plot_pro_v_foot, echo=F}
+Correlations
+```{r}
+par(mfrow = c(1,1))
+require(psych)
+pairs.panels(water[,c(3:7),with=F], smooth=T, ellipses=F, cor=T,
+      main = "Water Footprint Correlations", pch=21, 
+      bg = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+```
+
+# Footprint vs. Protein
+
+```{r, plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8}
 ### protein vs global_avg_footprint
 ### NON-interactive
-w1 <- ggplot(data=water, aes(x = Global_avg_footprint, y = protein, color=kingdom)) +   
+w1 <- ggplot(data=water, aes(y = Global_avg_footprint, x = protein, color=kingdom)) +   
         geom_point(data = subset(water, protein <= 3 & Global_avg_footprint < 3000)) 
+w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"), 
+                              values=c("darkred", "green4"),
+                              name= "Source")
+w1 <- w1 + geom_smooth(data = water, method="lm", fullrange=TRUE)
 w1 <- w1 + geom_text(aes(label=ifelse(
                                 protein > 3 | 
                                 Global_avg_footprint > 3000, 
-                                Products,'')), hjust=0,just=0, size=3)
-w1 <- w1 + scale_color_manual(values=c("darkred", "green4")) + 
-    geom_smooth(data = water, method="lm", fullrange=TRUE)
-w1 <- w1 +  xlab("Water Footprint: Global Average ($m^3/ton$") +
-    ylab("Protein (%)") +
-    ggtitle("Water Footprint vs. Protein of Raw Foods") + 
-    guides(fill=guide_legend(title=NULL)
-
-w1
+                                Products,'')), 
+                     hjust=0,just=0, size=3,
+                     position = position_jitter(w = 0.5, h = 300),
+                     show_guide = F)
+w1 <- w1 + labs(y=expression("Water Footprint: Global Average ("*m^3/ton*")"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods")
+w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
+   color="brown"), legend.position="top")
+w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
 ```
 
-
-
-```{r}
-par(mfrow = c(1,1))
-pairs(water[,c(3:7),with=F], panel = panel.smooth, 
-      main = "water footprint data", 
-      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-
-
-panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
-{
-    usr <- par("usr"); on.exit(par(usr))
-    par(usr = c(0, 1, 0, 1))
-    r <- abs(cor(x, y))
-    txt <- format(c(r, 0.123456789), digits = digits)[1]
-    txt <- paste0(prefix, txt)
-    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
-    text(0.5, 0.5, txt, cex = cex.cor * r)
-}
-pairs(USJudgeRatings[,1:4], lower.panel = panel.smooth, upper.panel = panel.cor)
-
-pairs(water[,c(3:7),with=F], lower.panel = panel.smooth, upper.panel = panel.cor,
-      main = "water footprint data", 
-      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-
-
-
-
-
-
-
-```
-
-
-```{r, echo=F}
+# Footprint vs. Protein (Interactive)
+```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
-
 w2 <- nPlot(Global_avg_footprint ~ protein, 
-            group = 'kingdom', 
-            data= water, 
-            type= 'scatterChart')
+            group = 'kingdom',  name = 'Source',
+            data = water, 
+            type = 'scatterChart')
 w2$chart(color = c("green", "darkred")) 
-w2$chart(tooltipContent = "#! function(key, x, y, e){ 
-  return e.point.Products
-} !#")
+w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
+                                return e.point.Products
+                            } !#")
 w2$set(title = "Water Footprint vs. Protein")
+w2$xAxis(axisLabel = 'Protein (%)')
+w2$yAxis(axisLabel = "Water Footprint: Global Average (m^3/ton)" )
+w2$chart(showControls = T)  ## turn on magnify.
 w2
+#w2$show('iframe', cdn = TRUE)
 
-
-w3 <- rPlot(Global_avg_footprint ~ protein, 
-            color = 'kingdom', 
-            data= water, 
-            type= 'point',
-            tooltip = "#! function(item){
-                    return item.Products
-                } !#")
-w3$guides(color = list(scale = "#! function(value){
-      color_mapping = {plant: 'green', animal: 'darkred'}
-      return color_mapping[value];                  
-    } !#"))
-w3$set(title = "Water Footprint vs. Protein")
-w3
-
+# 
+# 
+# 
+# w3 <- rPlot(Global_avg_footprint ~ protein, 
+#             color = 'kingdom',
+#             data= water, 
+#             type= 'point',
+#             tooltip = "#! function(item){
+#                     return item.Products
+#                 } !#")
+# w3$guides(color = list(scale = "#! function(value){
+#       color_mapping = {plant: 'green', animal: 'darkred'}
+#       return color_mapping[value];                  
+#     } !#"))
+# w3$set(title = "Water Footprint vs. Protein")
 ```
 
 
-```{r}
+
+#```{r}
 ggplot(bar) + 
   geom_bar(aes(variable, `(all)`, fill = ustanova), position = "dodge") +
   geom_text(aes(variable, `(all)`, label = sprintf("%2.1f", `(all)`)), 
@@ -202,6 +192,7 @@ interactive version of the same.
 ## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
 
 ### Conversion factors ###
+
 # cf.m3_t.L_100g    <- 0.1      ## cubic meters per metric ton to Liters per 100 grams.
 # cf.m3_t.gal_100g  <- .026     ## m^3 per m.ton to US liquid gallons per 100 grams. 
 # cf.m3_t.gal_oz    <- .007489  ## m^3/m.ton to US liq gallons per avoirdupois ounces.
@@ -391,3 +382,11 @@ summary(fit.s)$coeff
 ### "ndbno": "23220"  (about 25 g protein)
 ### But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
 
+
+
+
+
+
+This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">water_footprint.R</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http:\\stephenfranklin.info" property="cc:attributionName" rel="cc:attributionURL">Stephen Franklin</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br />Based on a work at <a xmlns:dct="http://purl.org/dc/terms/" href="http://waterfootprint.org/en/resources/water-footprint-statistics/" rel="dct:source">http://waterfootprint.org/en/resources/water-footprint-statistics/</a>.<br />Permissions beyond the scope of this license may be available at <a xmlns:cc="http://creativecommons.org/ns#" href="http://www.ars.usda.gov/Services/docs.htm?docid=8964" rel="cc:morePermissions">http://www.ars.usda.gov/Services/docs.htm?docid=8964</a>.
