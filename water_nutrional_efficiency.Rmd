@@ -14,25 +14,30 @@ library(curl)
 library(plyr)
 library(rCharts)
 library(psych)
+library(gridExtra)
 load("water_footprint_table.RData")
 ```
 
-```{r setup, cache = F}
+```{r setup, cache = F, echo=F}
 #options(rcharts.mode = 'iframe', rcharts.cdn = TRUE) 
 #knitr::opts_chunk$set(results = "asis", comment = NA)
 ```
 
-
----
+****
 
 Correlations
-```{r}
-par(mfrow = c(1,1))
+
+```{r pairs, echo=F, comment=F, warning=F, error=F}
 require(psych)
+svg(file="water_pairs.svg", width = 8)
+par(mfrow = c(1,1))
 pairs.panels(water[,c(3:7),with=F], smooth=T, ellipses=F, cor=T,
-      main = "Water Footprint Correlations", pch=21, 
+      main = "Water Footprint Correlations: Global Average", pch=21, 
       bg = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+dev.off()
 ```
+![Exploratory pairs plot for water footprints.](./water_pairs.svg)
+
 
 # Footprint vs. Protein
 
@@ -52,13 +57,15 @@ w1 <- w1 + geom_text(aes(label=ifelse(
                      hjust=0,just=0, size=3,
                      position = position_jitter(w = 0.5, h = 300),
                      show_guide = F)
-w1 <- w1 + labs(y=expression("Water Footprint: Global Average ("*m^3/ton*")"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods")
+w1 <- w1 + labs(y=expression("Water Footprint: Global Average ("*m^3/ton*")"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods: Global Average")
 w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
    color="brown"), legend.position="top")
-w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+ggsave("prot_Global.svg", width=8)
 ```
+![The water footprint is positively correlated with protein content.](./prot_Global.svg)
 
-# Footprint vs. Protein (Interactive)
+# Footprint vs. Protein: Global Average (Interactive)
 ```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
 w2 <- nPlot(Global_avg_footprint ~ protein, 
@@ -69,12 +76,13 @@ w2$chart(color = c("green", "darkred"))
 w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
                                 return e.point.Products
                             } !#")
-w2$set(title = "Water Footprint vs. Protein")
+w2$set(title = "Water Footprint vs. Protein: Global Average")
 w2$xAxis(axisLabel = 'Protein (%)')
 w2$yAxis(axisLabel = "Water Footprint: Global Average (m^3/ton)" )
-w2$chart(showControls = T)  ## turn on magnify.
-w2
-#w2$show('iframe', cdn = TRUE)
+w2$chart(showControls = F)  ## turn off stupid magnify.
+w2                                  ## RStudio; not Shiny-server
+#w2$show('iframe', cdn = TRUE)      ## RStudio; not Shiny-server
+#w2$show('iframesrc', cdn = TRUE)   ## not RStudio; shiny-server
 
 # 
 # 
@@ -91,7 +99,93 @@ w2
 #       return color_mapping[value];                  
 #     } !#"))
 # w3$set(title = "Water Footprint vs. Protein")
+# #w3$layer(y = '_fitted', copy_layer = T, type = 'line',
+# #  color = list(const = 'red'))
+# w3
 ```
+
+
+# Footprint vs. Protein: California
+
+```{r, plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8}
+### protein vs global_avg_footprint
+### NON-interactive
+w1 <- ggplot(data=na.omit(water), aes(y = California_footprint, x = protein, color=kingdom)) +   
+        geom_point(data = subset(na.omit(water), protein <= 3 & California_footprint < 3000, na.omit=T)) 
+w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"), 
+                              values=c("darkred", "green4"),
+                              name= "Source")
+w1 <- w1 + geom_smooth(data = na.omit(water), method="lm", fullrange=TRUE)
+w1 <- w1 + geom_text(aes(label=ifelse(
+                                protein > 3 | 
+                                California_footprint > 3000, 
+                                Products,'')), 
+                     hjust=0,just=0, size=3,
+                     position = position_jitter(w = 0.5, h = 300),
+                     show_guide = F)
+w1 <- w1 + labs(y=expression("Water Footprint: California ("*m^3/ton*")"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods in California")
+w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
+   color="brown"), legend.position="top")
+w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+ggsave("prot_US_CA.svg", width=8)
+```
+![The water footprint is positively correlated with protein content.](./prot_US_CA.svg)
+
+# Footprint vs. Protein: California (Interactive)
+```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA}
+require(rCharts)
+w2 <- nPlot(California_footprint ~ protein, 
+            group = 'kingdom',  name = 'Source',
+            data = water, 
+            type = 'scatterChart')
+w2$chart(color = c("green", "darkred")) 
+w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
+                                return e.point.Products
+                            } !#")
+w2$set(title = "Water Footprint vs. Protein: California")
+w2$xAxis(axisLabel = 'Protein (%)')
+w2$yAxis(axisLabel = "Water Footprint: California (m^3/ton)" )
+w2$chart(showControls = F)  ## turn off stupid magnify.
+#w2                                 ## works in RStudio
+w2$show('iframe', cdn = TRUE)       ## works in RStudio
+#w2$show('iframesrc', cdn = TRUE)   ## works in shiny-server
+```
+
+```{r table_protein_global, echo=F, eval=T}
+require(gridExtra)
+setkey(water, G_L_per_g_protein)
+svg("Gl_adjfp_prot_low.svg")
+grid.table(water[1:10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )])
+dev.off()
+
+svg("Gl_adjfp_prot_10.svg")
+grid.table(water[protein>10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )])
+dev.off()
+```
+![Global protein adjusted footprint](./Gl_adjfp_prot_low.svg "10 Least Water Intensive Food (Globally)" )
+
+![Global protein adjusted footprint](./Gl_adjfp_prot_10.svg "Protein Adjusted Water Footprint of Foods > 10 g Protein (Globally)" )
+
+
+
+```{r table_protein_CA, echo=F, eval=T}
+require(gridExtra)
+setkey(water, CA_L_per_g_protein)
+svg("CA_adjfp_prot_low.svg")
+grid.table(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ))
+dev.off()
+
+svg("CA_adjfp_prot_10.svg")
+grid.table(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ))
+grid.table(na.omit( water[protein>10,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )] ))
+dev.off()
+```
+
+![Global protein adjusted footprint](./CA_adjfp_prot_low.svg "10 Least Water Intensive Food (in California)" )
+
+![Global protein adjusted footprint](./CA_adjfp_prot_10.svg "Protein Adjusted Water Footprint of Foods > 10 g Protein (in California)" )
+
+
 
 
 
@@ -104,8 +198,9 @@ ggplot(bar) +
 ```
 
 
----
+****
 
+When I refer to raw foods, I'm not talking about the Raw Food movement, but to literally raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible.
 
 Discuss how we've heard that almonds are water intensive crops. And that meat even moreso.
 
@@ -115,7 +210,7 @@ Discuss how animal-based food does appear to be very water intensive, but not ex
 
 Discuss where this data comes from, and how they are missing alfalfa (even though people do eat alfalfa) and other fodder crops (hay). Show quote where the researchers explain that they're including fodder in their meat estimates.
 
----
+****
 
 "The water footprint of a live animal consists of
 different components: the indirect water footprint
@@ -127,7 +222,7 @@ water that is used to mix the feed."
 
 http://waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2012-WaterFootprintFarmAnimalProducts.pdf pp2-3 (pp402-3 as labeled) 
 
----
+*****
 Total outputs of CAlifornia
 
 
@@ -135,7 +230,7 @@ In 2013, California produced approximately
 7.96 million tons of alfalfa hay, valued at
 $1.57 billion. --http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFieldCrops.pdf page 13
 
----
+****
 2013: top CA commodities
 Milk and Cream  7,617,641,000  almost 21 percent of the nation's milk supply. Asian markets imported 53 percent of US dairy exports in 2013
 Almonds         5,768,100,000    99% of the nation
@@ -162,22 +257,22 @@ add others, depending on their low footprint/protein.
 
 http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CA_Ag_Overview.pdf
 
----
+****
 general source for CA 2013 yields: 
 http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/index.asp
----
+****
 
 We could show how CA is more efficient than the global average on almonds and less efficient on other crops.
 
 plot of greatest (non-absolute) difference of water footprint between CA and Global average on some sort of centered bar plot where the bar extends out left/right from the center.
  
----
+****
 
 scatterplot CA protein vs water footprint with labels or text.
 
 interactive version of the same.
 
----
+******
 
 
 
