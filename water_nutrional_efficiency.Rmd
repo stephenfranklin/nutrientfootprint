@@ -31,7 +31,6 @@ options(width = 100)
 require("knitr")
 opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/')
                ##, fig.path = 'fig_03_03/')
-
 options(xtable.type = 'html')
 knit_hooks$set(inline = function(x) {
   if(is.numeric(x)) {
@@ -54,7 +53,7 @@ Correlations
 require(psych)
 svg(file="water_pairs.svg", width = 8)
 par(mfrow = c(1,1))
-pairs.panels(water[,c(3:7),with=F], smooth=T, ellipses=F, cor=T,
+pairs.panels(water[,c(3:8),with=F], smooth=T, ellipses=F, cor=T,
       main = "Water Footprint Correlations: Global Average", pch=21, 
       bg = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
 dev.off()
@@ -64,7 +63,7 @@ dev.off()
 
 # Footprint vs. Protein
 
-```{r, plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8}
+```{r plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8}
 ### protein vs global_avg_footprint
 ### NON-interactive
 w1 <- ggplot(data=water, aes(y = Global_avg_footprint, x = protein, color=kingdom)) +   
@@ -130,7 +129,7 @@ w2                                  ## RStudio; not Shiny-server
 
 # Footprint vs. Protein: California
 
-```{r, plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8}
+```{r plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8}
 ### protein vs global_avg_footprint
 ### NON-interactive
 w1 <- ggplot(data=na.omit(water), aes(y = California_footprint, x = protein, color=kingdom)) +   
@@ -174,10 +173,10 @@ w2$show('iframe', cdn = TRUE)       ## works in RStudio
 #w2$show('iframesrc', cdn = TRUE)   ## works in shiny-server
 ```
 
-# Protein Adjusted Water Footprints
+# Adjusting the Water Footprint for Protein
 
 ```{r table_protein_global, echo=F, eval=T}
-require(gridExtra)
+require(xtable)
 setkey(water, G_L_per_g_protein)
 Gl_adjfp_prot_low <- xtable(water[1:10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )],align=c('c','c','c'))
 kable(Gl_adjfp_prot_low, format = "html", caption = "10 Least Water Intensive Foods (Globally)")
@@ -188,6 +187,7 @@ kable(Gl_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footp
 
 
 ```{r table_protein_CA, echo=F, eval=T, results='asis'}
+require(xtable)
 setkey(water, CA_L_per_g_protein)
 CA_adjfp_prot_low <- xtable(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ),align=c('c','c','c'))
 kable(CA_adjfp_prot_low, format = "html", caption = "10 Least Water Intensive Foods (in California)")
@@ -199,7 +199,7 @@ kable(CA_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footp
 # Comparison of Water Footprints: California vs. Global Average 
 
 
-```{
+```{r diffs, echo=F}
 differences <- na.omit((water[, .(Products, 
                          difference=(California_footprint-Global_avg_footprint),
                          California_footprint, Global_avg_footprint)]))
@@ -207,41 +207,25 @@ differences$abs=abs(differences$difference)
 setkey(differences,abs)
 differences <- differences[order(-abs)]
 head(differences,15)
+nrow(differences)
 
-qplot(differences, aes(Products, California_footprint, Global_avg_footprint)) + geom_bar(position="dodge")
+library(reshape2)
+diff.long<-melt(head(differences,10), id=c("Products","difference"), measure=c("California_footprint","Global_avg_footprint"))
 
-
-
-
-b <- ggplot(differences, aes(y=difference, x=Products, fill=))
-b + geom_bar(stat="identity", position="dodge") +
-    labs(x = "") +
-    labs(y = "Relative annual change (percentage)") +
-    labs(title = expression(PM[2.5] * " On-road Emissions: City Comparison")) +
-    geom_hline()
-
+d1 <- ggplot(diff.long, aes(x=reorder(Products,-difference),value,fill=variable)) +
+geom_bar(stat="identity",position="dodge")
+d1 <- d1 + labs(y=expression("Water Footprint ("*m^3/ton*")"), x = "Foods", title="Comparison of 10 Differing Water Footprints: California vs. Global Average")
+d1 <- d1 + theme(axis.title=element_text(face="bold.italic", 
+   color="brown"), legend.position="top")
+d1 + guides(fill = guide_legend(title = NULL))
 
 
-
-ggplot(data = differences) +
-    aes(Products, fill = difference) + 
-    geom_bar(data = differences, stat = "identity") + 
-    geom_hline(yintercept=0) +
-    scale_y_continuous(name = "",
-                       labels = paste0(seq(-100, 100, 20), "%"),
-                       limits = c(-1, 1),
-                       breaks = seq(-1, 1, .2)) +
-    coord_flip()
-
-
-
-
-ggplot(bar) + 
-  geom_bar(aes(variable, `(all)`, fill = ustanova), position = "dodge") +
-  geom_text(aes(variable, `(all)`, label = sprintf("%2.1f", `(all)`)), 
-            position = position_dodge(width=1)) + 
-  coord_flip()
+#ggplot(diff.long, aes(x=reorder(Products,-difference),value,fill=variable))+
+#geom_bar(stat="identity",position="dodge") +
+#coord_flip() + geom_text(aes(x=reorder(Products,-difference), `value`, label = sprintf("%2.0f", `value`), y=(`value`)*1.02+900, ymax=max(`value`)*1.05), position = position_dodge(width=1))
+ggsave("differences.svg", width=8)
 ```
+![Some foods in California have widely different water footprints.](./differences.svg)
 
 
 ****
@@ -319,9 +303,25 @@ scatterplot CA protein vs water footprint with labels or text.
 interactive version of the same.
 
 ******
+harvested roughages: include those which are sown and harvested annually for forage, fodder or silage. The principal types of
+harvest roughages include forage (green) cereals such as maize, oats and sweet sorghum; sugarcane, lucerne (alfalfa) and berseem
+(Egyptian clover); special high yielding grasses cultivated chiefly for silage (such as Thimoth grass); roots and tubers such as
+potatoes, beets, swedes, turnips; oilseeds such as winter rape; pulses such as field peas, beans, sweet lupins and vetches;
+vegetables such as pumpkins and cabbages. These feeds are sometimes processed for lower fibre content and bulk and are then
+usually classified as concentrate feeds (e.g. cassava chips and pellets, processed alfalfa, pea and bean meals).  (p14)
+
+The total feed consumption
+over the period 1996-2005 was 4996 million ton feed in dry matter per year, on average. Roughages account for
+the largest share out of this total, accounting for 80%, and feeds derived from crop production account for the
+remaining 20%.  (p20)
+
+http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf
+
+*****
 
 
 
+*****
 
 #### Conversions:
 #### 1000 cubic meters / metric ton

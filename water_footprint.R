@@ -640,6 +640,10 @@ save(water,file = "water_footprint_table.RData")
 # wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3:8),with=F]), trace = 0) 
 # summary(wfit.s)$coeff
 # summary(wfit.s)$r.squared
+# 
+# wfit.t <- stepAIC(lm(California_footprint ~ ., data = water[,c(2,4:8),with=F]), trace = 0) 
+# summary(wfit.t)$coeff
+# summary(wfit.t)$r.squared
 
 
 
