@@ -15,13 +15,36 @@ library(plyr)
 library(rCharts)
 library(psych)
 library(gridExtra)
+library(xtable)
+library(printr)
 load("water_footprint_table.RData")
 ```
 
-```{r setup, cache = F, echo=F}
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# make this an external chunk that can be included in any file
+
 #options(rcharts.mode = 'iframe', rcharts.cdn = TRUE) 
 #knitr::opts_chunk$set(results = "asis", comment = NA)
+
+options(width = 100)
+require("knitr")
+opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/')
+               ##, fig.path = 'fig_03_03/')
+
+options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+knit_hooks$set(plot = knitr:::hook_plot_html)
+##setwd("~/git_folder/datascience/regmod/regression_models_notes/")
 ```
+
+
 
 ****
 
@@ -151,45 +174,68 @@ w2$show('iframe', cdn = TRUE)       ## works in RStudio
 #w2$show('iframesrc', cdn = TRUE)   ## works in shiny-server
 ```
 
+# Protein Adjusted Water Footprints
+
 ```{r table_protein_global, echo=F, eval=T}
 require(gridExtra)
 setkey(water, G_L_per_g_protein)
-svg("Gl_adjfp_prot_low.svg")
-grid.table(water[1:10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )])
-dev.off()
+Gl_adjfp_prot_low <- xtable(water[1:10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )],align=c('c','c','c'))
+kable(Gl_adjfp_prot_low, format = "html", caption = "10 Least Water Intensive Foods (Globally)")
 
-svg("Gl_adjfp_prot_10.svg")
-grid.table(water[protein>10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )])
-dev.off()
+Gl_adjfp_prot_10 <- xtable(water[protein>10,.( Products, L_per_g_Protein=round(G_L_per_g_protein) )], align=c('c','c','c'))
+kable(Gl_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footprint of Foods > 10 g Protein (Globally)")
 ```
-![Global protein adjusted footprint](./Gl_adjfp_prot_low.svg "10 Least Water Intensive Food (Globally)" )
-
-![Global protein adjusted footprint](./Gl_adjfp_prot_10.svg "Protein Adjusted Water Footprint of Foods > 10 g Protein (Globally)" )
 
 
-
-```{r table_protein_CA, echo=F, eval=T}
-require(gridExtra)
+```{r table_protein_CA, echo=F, eval=T, results='asis'}
 setkey(water, CA_L_per_g_protein)
-svg("CA_adjfp_prot_low.svg")
-grid.table(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ))
-dev.off()
+CA_adjfp_prot_low <- xtable(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ),align=c('c','c','c'))
+kable(CA_adjfp_prot_low, format = "html", caption = "10 Least Water Intensive Foods (in California)")
 
-svg("CA_adjfp_prot_10.svg")
-grid.table(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )]),10 ))
-grid.table(na.omit( water[protein>10,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )] ))
-dev.off()
+CA_adjfp_prot_10 <- xtable(na.omit( water[protein>10,.( Products, L_per_g_Protein=round(CA_L_per_g_protein) )] ),align=c('c','c','c'))
+kable(CA_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footprint of Foods > 10 g Protein (in California)")
 ```
 
-![Global protein adjusted footprint](./CA_adjfp_prot_low.svg "10 Least Water Intensive Food (in California)" )
-
-![Global protein adjusted footprint](./CA_adjfp_prot_10.svg "Protein Adjusted Water Footprint of Foods > 10 g Protein (in California)" )
+# Comparison of Water Footprints: California vs. Global Average 
 
 
+```{
+differences <- na.omit((water[, .(Products, 
+                         difference=(California_footprint-Global_avg_footprint),
+                         California_footprint, Global_avg_footprint)]))
+differences$abs=abs(differences$difference)
+setkey(differences,abs)
+differences <- differences[order(-abs)]
+head(differences,15)
+
+qplot(differences, aes(Products, California_footprint, Global_avg_footprint)) + geom_bar(position="dodge")
 
 
 
-#```{r}
+
+b <- ggplot(differences, aes(y=difference, x=Products, fill=))
+b + geom_bar(stat="identity", position="dodge") +
+    labs(x = "") +
+    labs(y = "Relative annual change (percentage)") +
+    labs(title = expression(PM[2.5] * " On-road Emissions: City Comparison")) +
+    geom_hline()
+
+
+
+
+ggplot(data = differences) +
+    aes(Products, fill = difference) + 
+    geom_bar(data = differences, stat = "identity") + 
+    geom_hline(yintercept=0) +
+    scale_y_continuous(name = "",
+                       labels = paste0(seq(-100, 100, 20), "%"),
+                       limits = c(-1, 1),
+                       breaks = seq(-1, 1, .2)) +
+    coord_flip()
+
+
+
+
 ggplot(bar) + 
   geom_bar(aes(variable, `(all)`, fill = ustanova), position = "dodge") +
   geom_text(aes(variable, `(all)`, label = sprintf("%2.1f", `(all)`)), 
