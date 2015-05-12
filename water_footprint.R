@@ -409,7 +409,7 @@ animal_s[grep("sheep",animal_s[,Products],ignore.case=T)
 animal_s[grep("bovine",animal_s[,Products],ignore.case=T)
          ,"Products"]<-"beef"
 
-# Unfortunately, we get paltry results from "poultry" as search term for the USDA lists.
+# Unfortunately, we get paltry results from "poultry" as a search term for the USDA lists.
 poultry <- data.table(Products=c("chicken","turkey","duck"),
                       animal_s[Products=="poultry", .(California_footprint)],
                       animal_s[Products=="poultry", .(Global_avg_footprint)])
