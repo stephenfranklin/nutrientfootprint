@@ -74,10 +74,13 @@ usda_median <- function(nutrient_list,product,filter1=NULL,filter2=NULL){
             productlist <- productlist[grep(filter2,productlist$name,perl=T,
                                             ignore.case=T,invert=T),]
     }
+    # quick test: return the mean
+    #product.mean <- as.numeric(mean(productlist$gm))
+    #product.mean
     # Finally, return the median.
     product.med <- as.numeric(median(productlist$gm))
-    #list(product.med, productlist)     ## testing individual
-    #list(product.med, productlist$gm)  ## testing group via lapply
+    ##list(product.med, productlist)     ## testing individual
+    ##list(product.med, productlist$gm)  ## testing group via lapply
     product.med
 }
 
@@ -416,16 +419,23 @@ poultry <- data.table(Products=c("chicken","turkey","duck"),
 animal_s <- rbind(animal_s,poultry)
 animal_s <- animal_s[(Products!="poultry")]
 
+### Get USDA data
 animal.protein.list <- make_nutrient_list(n.protein, c("1300","0100","1700","1000","0500"))
 animal.kcal.list <- make_nutrient_list(n.kcal, c("1300","0100","1700","1000","0500"))
 animal.water.list <- make_nutrient_list(n.water, c("1300","0100","1700","1000","0500"))
 animal.fat.list <- make_nutrient_list(n.fat, c("1300","0100","1700","1000","0500"))
 animal.carb.list <- make_nutrient_list(n.carb, c("1300","0100","1700","1000","0500"))
 
+### Obtain median values for each nutrient
 animal_s$protein <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
        filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
-animal.proteins.all <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+animal_s$protein.alldata <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
                             filter2="\\b(dry|dried|condensed|evaporated)\\b")
+## Commented out because they were quick tests for which I altered the function to give the mean instead.
+#animal_s$protein.mean <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+#                           filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
+#animal_s$protein.mean.alldata <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+#                                   filter2="\\b(dry|dried|condensed|evaporated)\\b")
 animal_s$carb <- sapply(animal_s$Products,usda_median,nutrient_list=animal.carb.list,
                         filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
 animal_s$fat <- sapply(animal_s$Products,usda_median,nutrient_list=animal.fat.list,
@@ -511,12 +521,14 @@ rm(plants_s)
 # cf.m3_t.gal_100g  <- .026     ## m^3 per m.ton to US liquid gallons per 100 grams. 
 # cf.m3_t.gal_oz    <- .007489  ## m^3/m.ton to US liq gallons per avoirdupois ounces.
 
-water$CA_gal_per_oz <- cf.m3_t.gal_oz * water$California_footprint
-water$G_gal_per_oz <- cf.m3_t.gal_oz * water$Global_avg_footprint
+water$CA_L_per_100g <- cf.m3_t.L_100g * water$California_footprint
+water$G_L_per_100g <- cf.m3_t.L_100g * water$Global_avg_footprint
+#water$CA_gal_per_oz <- cf.m3_t.gal_oz * water$California_footprint
+#water$G_gal_per_oz <- cf.m3_t.gal_oz * water$Global_avg_footprint
 water$CA_L_per_g_protein <- cf.m3_t.L_100g * water$California_footprint / water$protein
 water$G_L_per_g_protein <- cf.m3_t.L_100g * water$Global_avg_footprint / water$protein
-water$CA_gal_per_g_protein  <- cf.m3_t.gal_100g * water$California_footprint / water$protein
-water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / water$protein
+#water$CA_gal_per_g_protein  <- cf.m3_t.gal_100g * water$California_footprint / water$protein
+#water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / water$protein
 
 save(water,file = "water_footprint_table.RData")
 

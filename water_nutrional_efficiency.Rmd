@@ -34,13 +34,84 @@ Here's two lists of foods with a protein content of at least 10%, one for Califo
 
 **list** **list**  
   
-The second column shows the amount of water (in Liters) used to produce just one gram of protein in that food. The third column shows the percent of protein by mass that that food contains. We want the food that uses the least water that has the highest percentage of protein. 
+I've ordered it by the second column, which shows the amount of water (in Liters) used to produce just one gram of protein in that food. The third column shows the percent of protein by mass that that food contains. We want the food that uses the least water that to produce its protein. And if we don't want to eat lots of food to get our protein, then we want the food that has the highest percentage of protein. 
 
 Globally, that would be the Brazil Nut, which is definitely an outlier. The water footprint of 2 Liters per gram protein is so low that it seems suspicious. If it is correct, it could be because Brazil Nuts are unique in that they are gathered from existing trees rather than from plantations. Perhaps the existing infrastructure of old trees means that ground water needn't be diverted to grow a tree. Of course if everyone started eating tons of Brazil Nuts than they'd have to start growing more trees and those trees would have a higher water footprint, and probably one similar to all the other nuts.
 
 A couple of caveats about this data. The water footprint is calculated for raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible. (I think the extra few liters it takes to clean and cook the beans is negligable though.) As you may know, there are many different proteins made from combinations of amino acids, nine of which our bodies can't make. We call those nine the essential amino acids, and foods that have those nine are said to have a complete protein. Monocots (like rice and corn) and dicots (like beans and lentils) complement each other's amino acids to form a complete protein in combination. (And by the way, your cells store them up, so you don't even have to eat them at the same meal!) The advantage of animal sourced food is that it always has complete proteins. Some plants do too though -- quinoa is famous for that. Anyway, I'm not counting the completeness of proteins here, just the overall quantity.
 
 The big advantage of high protein foods (meats and nuts) is that we can eat a lot less of them, which makes life easier. For example, if you eat just 100 grams (3.5 ounces) of turkey, you'll get 20 grams of protein. To get 20 grams of protein from spinach, you would need to eat a kilogram (2.2 pounds). But the water footprint of a kilogram of spinach (160 L) is still less than that of 100 grams of turkey (220 L) -- 60 Liters less. It's sounds like an enourmous amount of spinach to eat in one sitting, but not unreasonably so. In fact, there are vegan athletes who do eat these enourmous quantities of fruits and vegetables.
+
+
+In Mekonnen and Hoekstra's 2012 report, __The green, blue and grey water footprint of farm animals and animal products__, they provide their own table of water fooprints versus protein:
+
+<!--![Mekonnen's report gives meat an unusually low proportion of protein.](./mekonnen_2012_table3.pdf)-->
+
+
+<iframe src="./mekonnen_2012_table3.small.html" width="100%" frameborder= "0" class="myIframe">
+<p>http://waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2012-WaterFootprintFarmAnimalProducts.pdf</p>
+</iframe>
+
+<script type="text/javascript" language="javascript"> 
+$('.myIframe').css('height', $(window).height()+'px');
+</script>
+   
+But their levels of protein seem unusually low.
+
+The proportion of protein that I used, I obtained by selecting raw (not cooked nor cured nor soaked) products from the USDA list, and taking the median. The median seems more approptiate than the mean, as the mean gets dragged around more by outliers. It turns out that with the food data, both measures of average are similar.
+
+Choosing just raw foods seemed reasonable because the water footprint calculations don't mention anything as cooked. Calculating the water footprints for cooked and prepared foods would seems unnecessarily complicated and useless. The USDA nutrition numbers for cooked (or otherwise prepared) foods have a much higher variance. The raw value has its own bias of course. Primarily, legumes (pulses) which must be soaked to be eaten have a much higher proportion of protein when dry. Cooked meats have much higher protein levels than raw meats, as they have a much lower proportion of water and fat than do raw meats.
+
+Here is a comparison of averages of the protein content of beef obtained from the USDA Nutritional Database: 
+
+beef protein averages (%) | raw      | cooked or raw   
+--------------------------|----------|--------
+median                    | 20.69    | 24.24 
+mean                      | 19.97    | 24.37
+
+The Mekonnen-Hoeksta report lists a value of 138 g/kg (or 13.8%) of protein for beef.
+
+**Comparison of Water/Protein Efficiency Rates (L/g protein)**
+
+Product     | Franklin  | Mekonnen
+------------|-----------|------------------
+Beans       | 23.6      | 19
+Chicken     | 23.7      | 34
+Lentils     | 24.6      | 19
+Eggs        | 25.0      | 29
+Pork        | 29.8      | 57
+Pistachio   | 56.1      | 139
+Beef        | 74.5      | 112
+Almonds     | 76.4      | 139
+Butter      | 274       | 0
+
+They state: "When we look at the water requirements for protein,
+we find that the water footprint per gram of
+protein for milk, eggs and chicken meat is about 1.5
+times larger than for pulses. For beef, the water
+footprint per gram of protein is 6 times larger than
+for pulses."
+
+"The general conclusion is that from a freshwater resource
+perspective, it is more efficient to obtain calories,
+protein and fat through crop products than animal
+products."
+
+"Meat-based diets have a larger water footprint
+compared to a vegetarian diet. We explored the
+implications of our results by examining the diet
+within one developed country—the USA—to
+determine the effect of diet composition on water
+footprint. Meat contributes 37% towards the foodrelated
+water footprint of an average American
+citizen. Replacing all meat by an equivalent
+amount of crop products such as pulses and nuts
+will result in a 30% reduction of the food-related
+water footprint of the average American citizen."
+
+While is seems obvious that animal sourced foods are increasingly unsustainable for many other reasons (land needs, deforestation, increasing atmospheric methane, antibiotic resistance), from a water perspective, both meats and nuts make for a high water footprint.
+
+
 
 
 
