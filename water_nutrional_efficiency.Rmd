@@ -16,7 +16,6 @@ library(curl)
 library(plyr)
 library(rCharts)
 library(psych)
-library(gridExtra)
 library(xtable)
 #library(printr)
 load("water_footprint_table.RData")
@@ -62,20 +61,46 @@ The studies we have of water footprints (as well as the concept itself) come fro
 
 UNESCO-IHE measure three water footprints actually. The *blue water footprint* refers to the ground water used to produce a product, the *green water footprint* refers to the rain water used, and the *grey water footprint* is the volume of water that is required to dilute all of a product's pollutants (fertilizers, pesticides, manure, etc.) to such an extent that the quality of the water remains at or above legal standards. I used just one total water footprint, the sum of those three.
 
-The water footprint of a food strongly correlates positively with its protein content. What is also interesting is that, controlling for protein, animal sourced foods, have about the same water footprint as plant sourced foods. 
+For the animal sourced foods, the studies also separated out four categories of farming systems: grazing, industrial, a mix of those two, and a weighted average for each nation. We're only looking at the weighted average of the U.S. (The studies don't break it down by State, as they do for plant sourced foods.)
 
-So yes, meats and nuts have amazingly high water footprints, and beef and almonds are that the top. In California, beef takes 75 liters of water for each gram of protein it has. At 21% protein that's 1,575 liters of water for just 100 grams of raw beef. (That's 400 gallons for just 3.5 ounces.) Almonds, also 21% protein, are almost as thirsty, requiring 62 liters per gram of protein -- 1,300 liters for 100 grams of almonds. Even less water efficient are walnuts, garbanzo beans, and hazelnuts. Hazelnuts require 115 liters of water for each gram of protein they provide.
+The water footprint of a food strongly correlates positively with its protein content. What is also interesting is that, controlling for protein, animal sourced foods do not stand out from plant sourced foods. 
 
-Despite the strong trend of higher protein foods having higher water footprints, we can still find high protein foods that buck the trend and are unusually efficient in their water use.
+So yes, meats and nuts have amazingly high water footprints, and beef and almonds are that the top. In California, beef takes 75 liters of water for each gram of protein it has. At 21% protein that's 1,575 liters of water for just 100 grams of raw beef. (That's 400 gallons for just 3.5 ounces.) Almonds, also 21% protein, are almost as thirsty, requiring 62 liters per gram of protein -- 1,300 liters for 100 grams of almonds. Even less water efficient are walnuts, garbanzo beans, and hazelnuts. Hazelnuts require 115 liters of water for each gram of protein they provide. Despite the strong trend of higher protein foods having higher water footprints, we can still find high protein foods that buck the trend and are unusually efficient in their water use.
 
-Here's two lists of foods with a protein content of at least 10%, one for California grown foods, and one from a Global average.  
+Here are two lists of the least water intensive foods, one list for California grown foods, and one from a global average:  
+
+<table style="width:100%";>
+<tr><td>
+```{r table_protein_CA, echo=F, eval=T, results='asis'}
+require(xtable)
+setkey(water, CA_L_per_g_protein)
+CA_adjfp_prot_low <- xtable(head( na.omit(water[,.( Products, "Liters per Gram Protein"=round(CA_L_per_g_protein), "% protein"=round(protein) )]),10 ),align=c('c','c','c','c'))
+kable(CA_adjfp_prot_low, format = "html", caption = "Water Efficient Foods (California)")
+```
+</td>
+<td>
+```{r table_protein_global, echo=F, eval=T}
+require(xtable)
+setkey(water, G_L_per_g_protein)
+Gl_adjfp_prot_low <- xtable(water[1:10,.( Products, "Liters per Gram Protein"=round(G_L_per_g_protein), "% protein"=round(protein) )],align=c('c','c','c','c'))
+kable(Gl_adjfp_prot_low, format = "html", caption = "Water Efficient Foods (Global Average)")
+```
+</td></tr>
+</table>
+</br>  
+
+A few high protein foods already stand out as being unusually water efficient. In the California list, three animal sourced foods: turkey, chicken, and eggs,  and in the global list, Brazil nuts and oats. All five are interesting exceptions. I'll talk more about Brazil nuts further on. The percent of protein in oats should probably be reduced by half because it needs twice its mass in water to be edible, but still, getting 8 $\frac{1}{2}$ grams of protein by eating 100 grams of oatmeal that consumed 120 liters of water to grow isn't bad. Turkey, chicken, and eggs are immediate winners as far as water efficiency per protein, but because we already consume so much of them, they actually represent a huge amount of agricultural water.
+
+The most water efficient proteins on the lists are from garlic, spinach, and brussel sprouts, and these have low percentages of protein, so you would have to eat a lot of them, and you could, but most people don't.  
+
+So let's filter out the low protein foods:
 
 <table style="width:100%";>
 <tr><td>
 ```{r table_protein_CA_10, echo=F, eval=T, results='asis'}
 require(xtable)
 setkey(water, CA_L_per_g_protein)
-CA_adjfp_prot_10 <- xtable(na.omit( water[protein>10,.( Products, L_per_g_Protein=round(CA_L_per_g_protein), "% protein"=round(protein) )] ),align=c('c','c','c','c'))
+CA_adjfp_prot_10 <- xtable(head(na.omit( water[protein>10,.( Products, "Liters per Gram Protein"=round(CA_L_per_g_protein), "% protein"=round(protein) )] ), 10),align=c('c','c','c','c'))
 kable(CA_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footprint of Foods > 10 g Protein (in California)")
 ```
 </td>
@@ -83,19 +108,23 @@ kable(CA_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footp
 ```{r table_protein_global_10, echo=F, eval=T}
 require(xtable)
 setkey(water, G_L_per_g_protein)
-Gl_adjfp_prot_10 <- xtable(water[protein>10,.( Products, L_per_g_Protein=round(G_L_per_g_protein), "% protein"=round(protein) )], align=c('c','c','c','c'))
+Gl_adjfp_prot_10 <- xtable(head(water[protein>10,.( Products, "Liters per Gram Protein"=round(G_L_per_g_protein), "% protein"=round(protein) )],10), align=c('c','c','c','c'))
 kable(Gl_adjfp_prot_10, format = "html", caption = "Protein Adjusted Water Footprint of Foods > 10 g Protein (Globally)")
 ```
 </td></tr>
 </table>
+</br>  
   
-I've ordered it by the second column, which shows the amount of water (in Liters) used to produce just one gram of protein in that food. The third column shows the percent of protein by mass that that food contains. We want the food that uses the least water to produce its protein. And if we don't want to eat lots of food to get our protein, then we want the food that has the highest percentage of protein as well. 
+I've ordered it by the second column, which shows the amount of water (in liters) used to produce just one gram of protein in that food. The third column shows the percent of protein by mass that that food contains. We want the food that uses the least water to produce its protein. And if we don't want to eat lots of food to get our protein, then we want the food that has the highest percentage of protein as well. 
 
-Globally, that would be the Brazil Nut, which is definitely an outlier. The water footprint of 2 Liters per gram protein is so low that it seems suspicious. If it is correct, it could be because Brazil Nuts are unique in that they are gathered from existing trees rather than from plantations. Perhaps the existing infrastructure of old trees means that ground water needn't be diverted to grow a tree first. Of course if everyone started eating tons of Brazil Nuts than they'd have to start growing more trees and presumedly those trees would have a high water footprint.
+Globally, that would be the Brazil Nut, which is definitely an outlier. The water footprint of 2 Liters per gram protein is so low that it seems suspicious. If it is correct, it could be because Brazil nuts are unique in that they are gathered from existing trees rather than from plantations. Perhaps the existing infrastructure of old trees means that ground water needn't be diverted to grow a tree first, and therefore needn't be included in an accounting of the water footprint. Of course if everyone started eating tons of Brazil nuts, then they'd have to start growing more trees and presumedly those trees would have a high water footprint.
 
 A couple of caveats about this data. The water footprint is calculated for raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible. (I think the extra few liters it takes to clean and cook the beans is negligable though.) As you may know, there are many different proteins made from combinations of amino acids, nine of which our bodies can't make. We call those nine the essential amino acids, and foods that have those nine are said to have a complete protein. Monocots (like rice and corn) and dicots (like beans and lentils) complement each other's amino acids to form a complete protein. (By the way, your cells store them up, so you don't even have to eat them at the same meal!) The advantage of animal sourced food is that it always has complete proteins. Some plants do too though -- quinoa is famous for that. But nevermind that, I'm not counting the completeness of proteins here, just the overall quantity.
 
-The big advantage of high protein foods (meats and nuts) is that we can eat a lot less of them, which makes life easier. For example, if you eat just 100 grams (3.5 ounces) of turkey, you'll get 20 grams of protein. To get 20 grams of protein from spinach, you would need to eat a kilogram (2.2 pounds). But the water footprint of a kilogram of spinach (160 L) is still less than that of 100 grams of turkey (220 L) -- 60 Liters less. It's sounds like an enourmous amount of spinach to eat in one sitting, but not unreasonably so. In fact, there are vegan athletes who do eat these enourmous quantities of fruits and vegetables.
+The big advantage of high protein foods (meats and nuts) is that we can eat a lot less of them, which makes life easier. For example, if you eat just 100 grams (3.5 ounces) of turkey, you'll get 20 grams of protein. To get 20 grams of protein from spinach, you would need to eat a kilogram (2.2 pounds). But the water footprint of a kilogram of spinach (160 L) is still less than that of 100 grams of turkey (220 L) -- 60 Liters less. It's sounds like an enourmous amount of spinach to eat in one sitting, but not unreasonably so. In fact, there are vegan athletes who do eat these enourmous quantities of fruits and vegetables.  
+
+
+*****
 
 In Mekonnen and Hoekstra's 2012 report, __The Green, Blue and Grey Water Footprint of Farm Animals and Animal Products__, they provide their own table of water fooprints versus protein:
 
@@ -143,53 +172,25 @@ Butter      | 274       |   0
 
 Despite the differences, their general conclusion that animal sourced food has a much higher water footprint holds true. Though nuts have equally high water footprints, we consume ten times more meat and dairy, so the overall water footprint just dwarfs that of nuts. 
 
-Will avoiding foods that have a high water footprint (meat and nuts) meaningfully affect California's agricultural water use?  
+#### Will avoiding foods that have a high water footprint (meat and nuts) meaningfully affect California's agricultural water use?  
 
-![The water footprint of alfalfa and animal feed is huge. http://pacinst.org/wp-content/uploads/sites/21/2013/02/ca_ftprint_full_report3.pdf](./fig7_Californias_water_footprint_fulton_2012.png)
+![<a href=pacinst.org/wp-content/uploads/sites/21/2013/02/ca_ftprint_full_report3.pdf>The water footprint of alfalfa and animal feed is huge.</a>](./fig7_Californias_water_footprint_fulton_2012.png)
 
 In 2013, California produced about 900 million kilograms (2 billion pounds of almonds) using about 2.63 billion cubic meters (2.13 million acre feet) of water (not counting grey water). That is about the same volume as Mount Everest. Two thirds of those almonds were exported (USDA CA) (Pacinst). If Americans stopped eating almonds, we can assume that would have some effect economically. Perhaps the price would drop. Perhaps that 33% domestic portion of almonds would be exported as well. Or perhaps production would be reduced.
 
-If production of almonds for domestic use was reduced to zero for a year, that would save about 876 million cubic meters of water, which is something. It would be enough to refill California's second largest resevoir, Lake Oroville, to a normal level (water.ca.gov). In comparison, the mandatory water reduction in Californian cities amount to a savings of 1.85 billion cubic meters (1.5 million acre feet) over nine months (water.ca.gov). So less almond eating could arguably help.
+If production of almonds for domestic use was reduced to zero for a year, that would save about 876 million cubic meters of water, which is something. It would be enough to refill California's second largest resevoir, Lake Oroville, to a normal level (water.ca.gov). In comparison, the mandatory water reduction in Californian cities amount to a savings of 1.85 billion cubic meters (1.5 million acre feet) over nine months (water.ca.gov). So eating fewer almonds could arguably help.
 
 Animal products are actually a much, much bigger contributer to California's water footprint. California's production of "animal feed" as well as "Alfalfa, Straw, and Hay" (which is used as roughage in animal feed but counted separately because of a difference in imports/exports) account for about 26 billion cubic meters (21 million acre feet) of water (not counting grey water) or ten Mount Everests of water (pacinst).
 
 About 1.6 billion cubic meters (1.3 million AF) of meat and dairy products and 1.2 billion cubic meters (1 million AF) of alfalfa, straw, and hay are exported internationally (pacinst). California is actually an importer of animal feed. Apparently that enormous water footprint represents *not enough* animal feed (pacinst 18). There is a huge amount of Californian meat and dairy products that are exported and imported, both nationally and internationally, so it's less easy to estimate the possible amount of water that would be saved by refraining from meat. Suffice to say, it's hard to look at those plots and not think about taking an extra long shower instead of eating a burger. As an omnivore, it just got a lot harder to mock the vegans.
 
+http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CALivestockandDairy.pdf
+dairy p7
+eggs 5.05 billion p8
+turkey 465 million lbs 
+
 
 ****
-
-<!--
-
-They state: "When we look at the water requirements for protein,
-we find that the water footprint per gram of
-protein for milk, eggs and chicken meat is about 1.5
-times larger than for pulses. For beef, the water
-footprint per gram of protein is 6 times larger than
-for pulses."
-
-"The general conclusion is that from a freshwater resource
-perspective, it is more efficient to obtain calories,
-protein and fat through crop products than animal
-products."
-
-"Meat-based diets have a larger water footprint
-compared to a vegetarian diet. We explored the
-implications of our results by examining the diet
-within one developed country—the USA—to
-determine the effect of diet composition on water
-footprint. Meat contributes 37% towards the foodrelated
-water footprint of an average American
-citizen. Replacing all meat by an equivalent
-amount of crop products such as pulses and nuts
-will result in a 30% reduction of the food-related
-water footprint of the average American citizen."
-
-While is seems obvious that animal sourced foods are increasingly unsustainable for many other reasons (land needs, deforestation, increasing atmospheric methane, antibiotic resistance), from a water perspective, both meats and nuts make for a high water footprint.
-
-
-1 million acre-feet is $1.233 \times 10^9 m^3$ (1.2 billion cubic meters or 1.2 cubic kilometers) and is also half the volume of Mount Everest.
-
--->
 
 Correlations
 
@@ -233,8 +234,8 @@ ggsave("prot_Global.pdf", width=8)
 ```
 <!-- The jitter function shifts the data points to reduce overlap.
     Because it uses randomness, I ran it a few times and chose the clearest version.-->
-<!--![The water footprint is positively correlated with protein content.](./prot_Global.svg)-->
-![The water footprint is positively correlated with protein content.](./prot_Global1.svg)
+![The water footprint is positively correlated with protein content.](./prot_Global.svg)
+<!--![The water footprint is positively correlated with protein content.](./prot_Global1.svg)-->
 <!--![The water footprint is positively correlated with protein content.](./prot_Global2.svg)-->
 
 
@@ -285,8 +286,8 @@ ggsave("prot_US_CA.svg", width=10, height=8)
 ```
 <!-- The jitter function shifts the data points to reduce overlap.
     Because it uses randomness, I ran it a few times and chose the clearest version.-->
-<!--![The water footprint is positively correlated with protein content.](./prot_US_CA.svg)-->
-![The water footprint is positively correlated with protein content.](./prot_US_CA1.svg)
+![The water footprint is positively correlated with protein content.](./prot_US_CA.svg)
+<!--![The water footprint is positively correlated with protein content.](./prot_US_CA1.svg)-->
   
 
 # Footprint vs. Protein: California (Interactive)
@@ -307,43 +308,7 @@ w2$chart(showControls = F)  ## turn off stupid magnify.
 #w2                                 ## works in RStudio
 w2$show('iframe', cdn = TRUE)       ## works in RStudio
 #w2$show('iframesrc', cdn = TRUE)   ## works in shiny-server
-```
-
-# Adjusting the Water Footprint for Protein
-
-<style>
-table, th, td {
-    border: 1px;
-    padding: 4px;
-    text-align: center;
-}
-table {
-    border-spacing: 25px;
-}
-</style>
-<table style="width:100%";>
-<caption>Water Efficient Foods</caption>
-<tr>
-<th>California</th>
-<th>Global Average</th>
-</tr>
-<tr><td>
-```{r table_protein_CA, echo=F, eval=T, results='asis'}
-require(xtable)
-setkey(water, CA_L_per_g_protein)
-CA_adjfp_prot_low <- xtable(head( na.omit(water[,.( Products, L_per_g_Protein=round(CA_L_per_g_protein), "% protein"=round(protein) )]),10 ),align=c('c','c','c','c'))
-kable(CA_adjfp_prot_low, format = "html", caption = "Water Efficient Foods (California)")
-```
-</td>
-<td>
-```{r table_protein_global, echo=F, eval=T}
-require(xtable)
-setkey(water, G_L_per_g_protein)
-Gl_adjfp_prot_low <- xtable(water[1:10,.( Products, L_per_g_Protein=round(G_L_per_g_protein), "% protein"=round(protein) )],align=c('c','c','c','c'))
-kable(Gl_adjfp_prot_low, format = "html", caption = "Water Efficient Foods (Global Average)")
-```
-</td></tr>
-</table>
+``` 
 
 *****
 
@@ -375,22 +340,14 @@ ggsave("differences.svg", width=8)
 ```
 ![Some foods in California have widely different water footprints.](./differences.svg)
 
+This plot shows vastly differing water footprints of some foods grown in California versus a global average. Garbanzo beans (chickpeas) stand out as being ridiculously thirsty in California, but quite water efficient elsewhere. On the other hand, pistachios seem to have a relatively low water footprint in California.
 
 ****
 
 <!--
 
-When I refer to raw foods, I'm not talking about the Raw Food movement, but to literally raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible.
-
-Discuss how we've heard that almonds are water intensive crops. And that meat even moreso.
-
-barplot CA water footprint 10 highest.
-
-Discuss how animal-based food does appear to be very water intensive, but not exclusively so.
 
 Discuss where this data comes from, and how they are missing alfalfa (even though people do eat alfalfa) and other fodder crops (hay). Show quote where the researchers explain that they're including fodder in their meat estimates.
-
-****
 
 "The water footprint of a live animal consists of
 different components: the indirect water footprint
@@ -440,19 +397,9 @@ http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_
 ****
 general source for CA 2013 yields: 
 http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/index.asp
-****
-
-We could show how CA is more efficient than the global average on almonds and less efficient on other crops.
-
-plot of greatest (non-absolute) difference of water footprint between CA and Global average on some sort of centered bar plot where the bar extends out left/right from the center.
- 
-****
-
-scatterplot CA protein vs water footprint with labels or text.
-
-interactive version of the same.
 
 ******
+
 harvested roughages: include those which are sown and harvested annually for forage, fodder or silage. The principal types of
 harvest roughages include forage (green) cereals such as maize, oats and sweet sorghum; sugarcane, lucerne (alfalfa) and berseem
 (Egyptian clover); special high yielding grasses cultivated chiefly for silage (such as Thimoth grass); roots and tubers such as
@@ -469,10 +416,6 @@ http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProduct
 
 *****
 
-
-
-*****
-
 #### Conversions:
 #### 1000 cubic meters / metric ton
 #### = 120 gallons / pound
@@ -482,40 +425,6 @@ http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProduct
 ## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
 ## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
 
-### Conversion factors ###
-
-# cf.m3_t.L_100g    <- 0.1      ## cubic meters per metric ton to Liters per 100 grams.
-# cf.m3_t.gal_100g  <- .026     ## m^3 per m.ton to US liquid gallons per 100 grams. 
-# cf.m3_t.gal_oz    <- .007489  ## m^3/m.ton to US liq gallons per avoirdupois ounces.
-
-
-
-#### Animal data -- import data ####
-
-## Each country column comprises four columns for four Production systems:
-## Grazing    Mixed    Industrial	Weighted average.
-## We want just the weighted averages 
-## for the United States and the World Average.
-
-## There's some non-food products which we should eliminate, 
-##          e.g. Semen bovine 1064393    1142704.
-animal_cg[,food:=logical(.N)]
-## Some key words for non-food / food are:
-## live, waste, semen, hair, skin, hide, bend, leather
-## carcass, cut, meat, edible, fresh, frozen, prepar, preserv, process, dried
-
-# Products
-# 1:  Milk not concentrated & unsweetened exceeding 1% not exceeding 6% fat
-# 2: Yogurt concentratd o not,sweetend o not,flavourd o contg fruit o cocoa
-# 3:                                           Milk and cream nes sweetened
-# 4:                       Eggs, bird, in shell, fresh, preserved or cooked
-# 5: Dom fowl,duck,goose&guinea fowl meat&meat offal prep/presvd exc livers
-# 6:                                                             Cheese nes
-# 7:                                    Goat meat, fresh, chilled or frozen
-# 8:                                                                 Butter
-# 9:                                      Swine cuts, fresh or chilled, nes
-# 10:                                 Sheep cuts, boneless, fresh or chilled
-# 11:                                 Bovine cuts boneless, fresh or chilled
 
 ##!! Notes:
 ## I chose the meats that were described as fresh and boneless.
@@ -525,13 +434,6 @@ animal_cg[,food:=logical(.N)]
 ##  Bovine meat cured    21909	23799
 ## Also: why no fish?
 
-##!! Initial observation is that high protein products use the most water.
-
-
-#quantile(animal_s$mass)
-    ### The mass should be close to 100,
-    ### as the nutrients are measured in grams per 100 grams of product.
-
 ### USDA plant data ####
 ## These plants aren't *easily* grepped in a function,
 ## mostly because the study's names are not similar to the USDA's names.
@@ -540,39 +442,6 @@ animal_cg[,food:=logical(.N)]
 ## e.g. sugar, coffee, cocoa, and tea are all plants;
 ## the USDA lists them as many diverse products, but not as raw plants.
 ## *!*!* Also, what does "nes" mean? ... I'm going with "not explicitly stated".
-
-## ... that was kind of a waste of effort for only 9 extra observations; that's what I get for trying to be overly inclusive.
-
-
-models!
-
-
-
-    
-
-
-
-
-#### Tables and plots ####
-
-setkey(water,protein)
-rm(California_footprint, Global_avg_footprint, Products, protein)
-
-qplot(data=water, x=water$California_footprint,y=water$protein,
-      color = water$kingdom)
-qplot(data=water, x=water$Global_avg_footprint,y=water$protein,
-      col = water$kingdom)
-
-
-par(mfrow = c(1,1))
-pairs(water[,c(2,3,4,5,8,9),with=F], panel = panel.smooth, 
-      main = "water footprint data", 
-      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-cor(water$protein,water$California_footprint)
-
-wfit0 <- lm(Global_avg_footprint ~ protein, water)
-summary(wfit0)$r.squared
-summary(wfit0)$coefficients
 
 ### Global_avg: We would expect a 390 m3/ton increase in the footprint for each 1 gram increase in protein.
 ### The amount of protein in the food explains 61% of the variance in the data.
@@ -660,8 +529,6 @@ wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3,4,5),with=F]), 
 summary(fit.s)$coeff
 
 
-
-
 #### The USDA numbers and descriptions of foods are different
 #### than the water footprint data.
 
@@ -675,26 +542,36 @@ summary(fit.s)$coeff
 
 -->
 
+These lines are _going to_ intersect<sup>1</sup>!
+
+...
+
+--------
+
+**Footnotes:**
+
+1. See Euclid's 5<sup>th</sup> postulate.
+
 # References
 
-http://waterfootprint.org/en/resources/water-footprint-statistics/
+Mekonnen, M.M. and Hoekstra, A.Y. (2011). The green, blue and grey water footprint of crops and derived crop products, Hydrology and Earth System Sciences, 15(5): 1577-1600. Retrieved May 2, 2015 from waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2011-WaterFootprintCrops.pdf.
 
-http://www.ars.usda.gov/research/projects/projects.htm?accn_no=426560
+Mekonnen, M.M. and Hoekstra, A.Y. (2012). A global assessment of the water footprint of farm animal products, Ecosystems, 15(3): 401–415. Retrieved May 2, 2015 from waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2012-WaterFootprintFarmAnimalProducts.pdf.
 
-http://www.ars.usda.gov/sp2UserFiles/Place/80400525/Data/SR27/sr27_doc.pdf
+Mekonnen, M.M. and Hoekstra, A.Y. (2010). The green, blue and grey
+water footprint of farm animals and animal products. UNESCO-IHE Institute for Water Education. Retrieved May 2, 2015 from waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf.
 
-USDA CA, California Agricultural Statistics 2013 Crop Year, 2015, http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFruitsandNuts.pdf
+U.S. Department of Agriculture, Agricultural Research Service. (2014). USDA National Nutrient Database for Standard Reference, Release 27. Nutrient Data Laboratory Home Page. Retrieved May 2, 2015 from ars.usda.gov/nutrientdata.
 
-Pacinst, Fulton, Julian et al., 2012, http://pacinst.org/wp-content/uploads/sites/21/2013/02/ca_ftprint_full_report3.pdf
+U.S. Department of Agriculture, National Agricultural Statistics Service. (2015). California Agricultural Statistics, 2013 Crop Year. Retrieved May 2, 2015 from nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/.
 
-water.ca.gov, 2015, http://www.water.ca.gov/waterconditions/waterconditions.cfm
+California Department of Water Resources. (2015). Water Conditions: Storms, Drought and California's Water Situation: Key Points. Retrieved May 2, 2015 from www.water.ca.gov/waterconditions/waterconditions.cfm.
 
-http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf
-
+Fulton, J., Cooley, H., & Gleick, P.H. (2012). Assessment of California’s Water Footprint. Pacific Institute. Retreived May 2, 2015 from http://pacinst.org/publication/assessment-of-californias-water-footprint/.
 
 ****
 
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />
 
-This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
-
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">water_footprint.R</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http:\\stephenfranklin.info" property="cc:attributionName" rel="cc:attributionURL">Stephen Franklin</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br />Based on a work at <a xmlns:dct="http://purl.org/dc/terms/" href="http://waterfootprint.org/en/resources/water-footprint-statistics/" rel="dct:source">http://waterfootprint.org/en/resources/water-footprint-statistics/</a>.<br />Permissions beyond the scope of this license may be available at <a xmlns:cc="http://creativecommons.org/ns#" href="http://www.ars.usda.gov/Services/docs.htm?docid=8964" rel="cc:morePermissions">http://www.ars.usda.gov/Services/docs.htm?docid=8964</a>.
+This work is a reproducible document written in R and licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. You can see all the code (use it and modify it) at [https://github.com/stephenfranklin/nutrientfootprint](https://github.com/stephenfranklin/nutrientfootprint).
+To view a copy of this license, visit [http://creativecommons.org/licenses/by-sa/4.0/](http://creativecommons.org/licenses/by-sa/4.0/).
