@@ -189,7 +189,6 @@ dairy p7
 eggs 5.05 billion p8
 turkey 465 million lbs 
 
-
 ****
 
 Correlations

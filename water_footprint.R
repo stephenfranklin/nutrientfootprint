@@ -115,6 +115,9 @@ if(!file.exists("Report47-Appendix-II.csv")) {
     if(!file.exists(name)) unzip("Report47-Appendix-II.zip")
 }
 ##!! Use Excel to convert the file to csv. !!##
+## The data really is 3 dimensional but is sloppily written onto a single sheet. ##
+## It became exceedingly difficult to import directly from Excel,
+## so converting it to csv just worked much better.
 
 ### animals ###
 data <- "http://waterfootprint.org/media/downloads/Report48-Appendix-V.zip"
@@ -131,6 +134,8 @@ rm(name)
 ##!! Use Excel to convert the file to csv. !!##
 
 ##### Plant data -- import data #####
+
+##!! Use Excel to convert the file to csv. !!##
 system.time(
     plants <- fread("Report47-Appendix-II.csv",na.strings=c("NA","-",""),
                    stringsAsFactors = T, skip=4, select=c(1:10,3058),header=T )
@@ -253,6 +258,7 @@ setkey(plants_s,"California_footprint")
 ## grep("United States",colnames(animal), ignore.case = T)  ## [1] 786 787 788 789
 ## grep("World Average",colnames(animal), ignore.case = T)  ## [1] 10
 
+##!! Use Excel to convert the file to csv. !!##
 system.time(
     animal <- fread("Report48-Appendix-V.csv",na.strings=c("NA","-",""),
                     stringsAsFactors = T,skip=2,header=T,select=c(3,9,13,789) )
@@ -386,6 +392,17 @@ setkey(waterf,California_footprint, Global_avg_footprint)
 
 
 #### Here we painstakingly wrangle the USDA data. ####
+
+# 
+# The USDA numbers and descriptions of foods are different than the water footprint data.
+# e.g. USDA doesn't have "bovine", and a search for "beef"
+# yields 1154 results with a variety of protein content.
+# "beef ground" yield 49 choices.
+# Perhaps the best choice is: 
+# "name": "Beef, ground, unspecified fat content, cooked",
+# "ndbno": "23220"  (about 25 g protein)
+# But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
+# 
 
 ### USDA Animal Data ###
 
@@ -531,143 +548,4 @@ water$G_L_per_g_protein <- cf.m3_t.L_100g * water$Global_avg_footprint / water$p
 #water$G_gal_per_g_protein <- cf.m3_t.gal_100g * water$Global_avg_footprint / water$protein
 
 save(water,file = "water_footprint_table.RData")
-
-
-#### Tables and plots ####
-
-setkey(water,protein)
-rm(California_footprint, Global_avg_footprint, Products, protein)
-attach(water)
-
-
-p <- qplot(water, x=California_footprint,y=protein,
-     col = kingdom) 
-p + scale_colour_manual(values=c("green4", "darkred"))
-
-plot(water, x=Global_avg_footprint,y=protein,
-     col = kingdom) + scale_colour_manual(values=c("green4", "darkred"))
-
-p <- ggplot( water, aes(x=Global_avg_footprint, y=protein, 
-   colour=factor(kingdom)) )
-p + geom_point() + scale_colour_manual(values=c("green4", "darkred"))
-
-
-
-par(mfrow = c(1,1))
-pairs(water[,c(2:8),with=F], panel = panel.smooth, 
-      main = "water footprint data", 
-      col = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-cor(Global_avg_footprint, water$protein)
-cor(complete.cases(California_footprint),protein)
-is.(water$California_footprint)
-
-ggpairs(water[,c(3:6),with=F],colours=water$kingdom, alpha=1) scale_colour_manual(values=c("green4", "darkred"))
-
-wfit0 <- lm(Global_avg_footprint ~ protein + fat + water + carb + kcal + kingdom, water)
-summary(wfit0)$r.squared
-summary(wfit0)$coefficients
-
-## Global_avg: We would expect a 390 m3/ton increase in the footprint for each 1 gram increase in protein.
-## The amount of protein in the food explains 61% of the variance in the data.
-## This makes sense because protein synthesis requires water.
-## https://www.youtube.com/watch?v=H8WJ2KENlK0&index=3&list=PL3EED4C1D684D3ADF
-## https://www.youtube.com/watch?v=itsb2SqR-R0&index=11&list=PL3EED4C1D684D3ADF
-## CA: 450 m3/ton increase. r2 is 52%.
-
-## Do animal-based foods have a bigger water footprint than plant-based foods?
-wfit1 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
-summary(wfit1)$r.squared
-summary(wfit1)$coefficients
-### Well, it seems (p-value = 0.01) 
-### there is a somewhat significant increase in the water footprint of 
-### animal-based foods over plant-based foods.
-### But it only explains 13% of the variance.
-
-### Holding protein constant:
-wfit2 <- lm(Global_avg_footprint ~ kingdom + protein, water)
-summary(wfit2)$r.squared
-summary(wfit2)$coefficients
-### It seems protein content is very important in predicting water footprint.
-
-## Examining the interaction between kingdom and protein
-wfit3 <- lm(Global_avg_footprint ~ protein * kingdom, water)
-summary(wfit3)$r.squared
-summary(wfit3)$coefficients
-## The reference category for `kingdom` is "1" -- plants, 
-## which has and intercept of 155 m3/ton. 
-## The slope for *animals* is 416. 
-## The change in intercept for *animals* is 1685.
-## And the change in slope for *animals* is -125.
-
-## The interaction isn't significant (p: 0.3 > 0.05)
-
-## Let's plot the regression lines for animal versus plant sources,
-## with protein as an interaction:
-par(mfrow = c(1,1))
-plot(protein,Global_avg_footprint,pch=19)
-points(protein,Global_avg_footprint,pch=19,col=((as.numeric(kingdom)<2)*1+2))
-## Again, the as.numeric() turns the factor "0" into a 1
-## and the factor "1" into a 2.
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### The two food sources seem closely correlated, and that agrees
-### with the interaction being insignificant.
-
-### But let's check the residuals
-par(mfrow = c(1,1))
-ew <- wfit3$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-
-### compared to fit2
-par(mfrow = c(1,1))
-ew <- wfit2$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-### Very similar. Lots of outliers in plants.
-
-## resdiuals and leverage
-par(mfrow = c(2, 2))
-plot(wfit3)
-### Three products -- beef, butter, almonds -- have significant leverage in the model. 
-
-### Let's see the model without them:
-par(mfrow = c(1,1))
-plot(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19)
-points(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19,col=((as.numeric(kingdom[c(-12,-45,-46)])<2)*1+2))
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### Pretty much the same.
-
-### Analysis of variance to compare the three models:
-anova(wfit0, wfit1, wfit2, wfit3)
-#### anova shows that wfit2 
-#### (predicting the footprint by kingdom holding protein constant)
-#### is the best model.
-
-###  
-library(MASS)
-wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3:8),with=F]), trace = 0) 
-summary(wfit.s)$coeff
-summary(wfit.s)$r.squared
-
-wfit.t <- stepAIC(lm(California_footprint ~ ., data = water[,c(2,4:8),with=F]), trace = 0) 
-summary(wfit.t)$coeff
-summary(wfit.t)$r.squared
-
-
-
-### The USDA numbers and descriptions of foods are different
-### than the water footprint data.
-
-## e.g. USDA doesn't have "bovine", and a search for "beef"
-## yields 1154 results with a variety of protein content.
-## "beef ground" yield 49 choices.
-## Perhaps the best choice is: 
-## "name": "Beef, ground, unspecified fat content, cooked",
-## "ndbno": "23220"  (about 25 g protein)
-## But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
-
 
