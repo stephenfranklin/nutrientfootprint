@@ -21,29 +21,6 @@ library(xtable)
 load("water_footprint_table.RData")
 ```
 
-```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F, eval=F}
-# make this an external chunk that can be included in any file
-
-#options(rcharts.mode = 'iframe', rcharts.cdn = TRUE) 
-#knitr::opts_chunk$set(results = "asis", comment = NA)
-
-options(width = 100)
-require("knitr")
-opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/')
-               ##, fig.path = 'fig_03_03/')
-options(xtable.type = 'html')
-knit_hooks$set(inline = function(x) {
-  if(is.numeric(x)) {
-    round(x, getOption('digits'))
-  } else {
-    paste(as.character(x), collapse = ', ')
-  }
-})
-knit_hooks$set(plot = knitr:::hook_plot_html)
-##setwd("~/git_folder/datascience/regmod/regression_models_notes/")
-```
-
-
 You've probably heard by now that there's a severe drought in California, and that governor Jerry Brown has ordered a 25% reduction in city water usage. You've probably also heard that 80% of California's water is used by agriculture, and that some crops, famously almonds, require a disproportionally large amount of water to grow, which is to say, they have a large water footprint.
 
 Others have argued that the water footprint of almonds really isn't so bad compared to meat and to fodder crops for that meat. 
@@ -210,24 +187,25 @@ dev.off()
 ```{r plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
 ### protein vs global_avg_footprint
 ### NON-interactive
-w1 <- ggplot(data=water, aes(y = Global_avg_footprint, x = protein, color=kingdom)) +
-        geom_point(data = subset(water, protein <= 3 & Global_avg_footprint < 3000))
+w1 <- ggplot(data=water, aes(y = G_L_per_100g, x = protein, color=kingdom)) +
+        geom_point(data = subset(water, protein <= 3 & G_L_per_100g <= 300))
 w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"),
                               values=c("darkred", "green4"),
                               name= "Source")
 w1 <- w1 + geom_smooth(data = water, method="lm", fullrange=TRUE)
 w1 <- w1 + geom_text(aes(label=ifelse(
                                 protein > 3 |
-                                Global_avg_footprint > 3000,
+                                G_L_per_100g > 300,
                                 Products,'')),
                      hjust=0,just=0, size=3,
-                     position = position_jitter(w = 0.5, h = 300),
+                     position = position_jitter(w = 0.5, h = 15),
                      show_guide = F)
-w1 <- w1 + labs(y=expression("Water Footprint: Global Average ("*m^3/ton*")"),
+w1 <- w1 + labs(y=expression("Water Footprint: Global Average (L/100g)"),
             x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods: Global Average")
 w1 <- w1 + theme(axis.title=element_text(face="bold.italic",
    color="brown"), legend.position="top")
-w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
+#w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
 ggsave("prot_Global.svg", width=10, height=8)
 ggsave("prot_Global.pdf", width=8)
 ```
@@ -241,7 +219,7 @@ ggsave("prot_Global.pdf", width=8)
 # Footprint vs. Protein: Global Average (Interactive)
 ```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
-w2 <- nPlot(Global_avg_footprint ~ protein, 
+w2 <- nPlot(G_L_per_100g ~ protein, 
             group = 'kingdom',  name = 'Source',
             data = water, 
             type = 'scatterChart')
@@ -251,7 +229,7 @@ w2$chart(tooltipContent =   "#! function(key, x, y, e){
                             } !#")
 w2$set(title = "Water Footprint vs. Protein: Global Average")
 w2$xAxis(axisLabel = 'Protein (%)')
-w2$yAxis(axisLabel = "Water Footprint: Global Average (m^3/ton)" )
+w2$yAxis(axisLabel = "Water Footprint: Global Average (L/100g)" )
 w2$chart(showControls = F)  ## turn off stupid magnify.
 w2                                  ## RStudio; not Shiny-server
 #w2$show('iframe', cdn = TRUE)      ## RStudio; not Shiny-server
@@ -263,23 +241,24 @@ w2                                  ## RStudio; not Shiny-server
 ```{r plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
 ### protein vs global_avg_footprint
 ### NON-interactive
-w1 <- ggplot(data=na.omit(water), aes(y = California_footprint, x = protein, color=kingdom)) +   
-        geom_point(data = subset(na.omit(water), protein <= 3 & California_footprint < 3000, na.omit=T)) 
+w1 <- ggplot(data=na.omit(water), aes(y = CA_L_per_100g, x = protein, color=kingdom)) +   
+        geom_point(data = subset(na.omit(water), protein <= 3 & CA_L_per_100g <= 300, na.omit=T)) 
 w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"), 
                               values=c("darkred", "green4"),
                               name= "Source")
 w1 <- w1 + geom_smooth(data = na.omit(water), method="lm", fullrange=TRUE)
 w1 <- w1 + geom_text(aes(label=ifelse(
                                 protein > 3 | 
-                                California_footprint > 3000, 
+                                CA_L_per_100g > 300, 
                                 Products,'')), 
                      hjust=0,just=0, size=3,
-                     position = position_jitter(w = 0.5, h = 300),
+                     position = position_jitter(w = 0.5, h = 15),
                      show_guide = F)
-w1 <- w1 + labs(y=expression("Water Footprint: California ("*m^3/ton*")"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods in California")
+w1 <- w1 + labs(y=expression("Water Footprint: California (L/100g)"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods in California")
 w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
    color="brown"), legend.position="top")
-w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
+#w1 <- w1 + expand_limits(y = c(0, 2000), x = c(0, 30) )
 ggsave("prot_US_CA.svg", width=10, height=8)
 #ggsave("prot_US_CA.pdf", width=8)
 ```
@@ -292,7 +271,7 @@ ggsave("prot_US_CA.svg", width=10, height=8)
 # Footprint vs. Protein: California (Interactive)
 ```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
-w2 <- nPlot(California_footprint ~ protein, 
+w2 <- nPlot(CA_L_per_100g ~ protein, 
             group = 'kingdom',  name = 'Source',
             data = na.omit(water), 
             type = 'scatterChart')
@@ -302,7 +281,7 @@ w2$chart(tooltipContent =   "#! function(key, x, y, e){
                             } !#")
 w2$set(title = "Water Footprint vs. Protein: California")
 w2$xAxis(axisLabel = 'Protein (%)')
-w2$yAxis(axisLabel = "Water Footprint: California (m^3/ton)" )
+w2$yAxis(axisLabel = "Water Footprint: California (L/100g)" )
 w2$chart(showControls = F)  ## turn off stupid magnify.
 #w2                                 ## works in RStudio
 w2$show('iframe', cdn = TRUE)       ## works in RStudio
@@ -423,121 +402,6 @@ http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProduct
 
 ## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
 ## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
-
-
-##!! Notes:
-## I chose the meats that were described as fresh and boneless.
-## Excluded meats that were offal, liver, or preserved.
-## Excluded animal_ed[65] as an outlier, though a remarkable one.
-##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317    51779
-##  Bovine meat cured    21909	23799
-## Also: why no fish?
-
-### USDA plant data ####
-## These plants aren't *easily* grepped in a function,
-## mostly because the study's names are not similar to the USDA's names.
-## e.g. "aubergines(egg-plants)" vs. "eggplants"
-## Or because the products themselves weren't easy to match.
-## e.g. sugar, coffee, cocoa, and tea are all plants;
-## the USDA lists them as many diverse products, but not as raw plants.
-## *!*!* Also, what does "nes" mean? ... I'm going with "not explicitly stated".
-
-### Global_avg: We would expect a 390 m3/ton increase in the footprint for each 1 gram increase in protein.
-### The amount of protein in the food explains 61% of the variance in the data.
-### This makes sense because protein synthesis requires water.
-### https://www.youtube.com/watch?v=H8WJ2KENlK0&index=3&list=PL3EED4C1D684D3ADF
-### https://www.youtube.com/watch?v=itsb2SqR-R0&index=11&list=PL3EED4C1D684D3ADF
-### CA: 450 m3/ton increase. r2 is 52%.
-
-### Do animal-based foods have a bigger water footprint than plant-based foods?
-wfit1 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
-summary(wfit1)$r.squared
-summary(wfit1)$coefficients
-### Well, it seems (p-value = 0.01) 
-### there is a somewhat significant increase in the water footprint of 
-### animal-based foods over plant-based foods.
-### But it only explains 13% of the variance.
-
-### Holding protein constant:
-wfit2 <- lm(Global_avg_footprint ~ kingdom + protein, water)
-summary(wfit2)$r.squared
-summary(wfit2)$coefficients
-### It seems protein content is very important in predicting water footprint.
-
-## Examining the interaction between kingdom and protein
-wfit3 <- lm(Global_avg_footprint ~ protein * kingdom, water)
-summary(wfit3)$r.squared
-summary(wfit3)$coefficients
-### The reference category for `kingdom` is "1" -- plants, 
-### which has and intercept of 155 m3/ton. 
-### The slope for *animals* is 416. 
-### The change in intercept for *animals* is 1685.
-### And the change in slope for *animals* is -125.
-
-### The interaction isn't significant (p: 0.3 > 0.05)
-
-### Let's plot the regression lines for animal versus plant sources,
-### with protein as an interaction:
-par(mfrow = c(1,1))
-plot(protein,Global_avg_footprint,pch=19)
-points(protein,Global_avg_footprint,pch=19,col=((as.numeric(kingdom)<2)*1+2))
-## Again, the as.numeric() turns the factor "0" into a 1
-## and the factor "1" into a 2.
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### The two food sources seem closely correlated, and that agrees
-### with the interaction being insignificant.
-
-### But let's check the residuals
-par(mfrow = c(1,1))
-ew <- wfit3$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-
-### compared to fit2
-par(mfrow = c(1,1))
-ew <- wfit2$residuals 
-plot(kingdom, ew,
-     xlab = "kingdom (0=plant)",
-     ylab = "Residuals")
-### Very similar. Lots of outliers in plants.
-
-## resdiuals and leverage
-par(mfrow = c(2, 2))
-plot(wfit3)
-### Three products -- beef, butter, almonds -- have significant leverage in the model. 
-
-### Let's see the model without them:
-par(mfrow = c(1,1))
-plot(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19)
-points(protein[c(-12,-45,-46)],Global_avg_footprint[c(-12,-45,-46)],pch=19,col=((as.numeric(kingdom[c(-12,-45,-46)])<2)*1+2))
-abline(c(wfit3$coeff[1],wfit3$coeff[2]),col="green",lwd=3)
-abline(c(wfit3$coeff[1] + wfit3$coeff[3],wfit3$coeff[2] +wfit3$coeff[4]),col="red",lwd=3)
-### Pretty much the same.
-
-### Analysis of variance to compare the three models:
-anova(wfit0, wfit1, wfit2, wfit3)
-#### anova shows that wfit2 
-#### (predicting the footprint by kingdom holding protein constant)
-#### is the best model.
-
-###  
-library(MASS)
-wfit.s <- stepAIC(lm(Global_avg_footprint ~ ., data = water[,c(3,4,5),with=F]), trace = 0) 
-summary(fit.s)$coeff
-
-
-#### The USDA numbers and descriptions of foods are different
-#### than the water footprint data.
-
-### e.g. USDA doesn't have "bovine", and a search for "beef"
-### yields 1154 results with a variety of protein content.
-### "beef ground" yield 49 choices.
-### Perhaps the best choice is: 
-### "name": "Beef, ground, unspecified fat content, cooked",
-### "ndbno": "23220"  (about 25 g protein)
-### But "beef chuck" which yields 179 choices of higher protein values (up to 36 g).
 
 -->
 

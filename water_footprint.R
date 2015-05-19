@@ -436,6 +436,24 @@ poultry <- data.table(Products=c("chicken","turkey","duck"),
 animal_s <- rbind(animal_s,poultry)
 animal_s <- animal_s[(Products!="poultry")]
 
+### Comment on the poultry data -- written after completion of the analysis.
+## So I've separated poultry into three data points 
+## which all have the same water footprint but different protein content. 
+## Their footprints were averaged presumedly because they were very similar.
+## Creating more data points adds more weight to what was "poultry".
+## A huge amount of chicken is produced, lots of turkey, and perhaps not so much duck.
+## Whereas the amount of beef produced is more than poultry altogether.
+## So those extra data points will reduce the effect of beef, etc. 
+## But this data set doesn't take into account the amount that is produced,
+## so that can't be a concern here.
+## I could average the protein data back into a single "poultry" data point.
+## (The model has a higher R2 with poultry as a single data point.)
+## Or I could remove duck as a compromise.
+## The animal water footprint data is grouped, whereas the plant data is individualized.
+## For now, I've chosen to leave all three in because I think this isn't really about
+## finding the best predictive model, 
+## rather it's about finding individual water efficient foods.
+
 ### Get USDA data
 animal.protein.list <- make_nutrient_list(n.protein, c("1300","0100","1700","1000","0500"))
 animal.kcal.list <- make_nutrient_list(n.kcal, c("1300","0100","1700","1000","0500"))
@@ -549,3 +567,20 @@ water$G_L_per_g_protein <- cf.m3_t.L_100g * water$Global_avg_footprint / water$p
 
 save(water,file = "water_footprint_table.RData")
 
+
+##!! Notes:
+## I chose the meats that were described as fresh and boneless.
+## Excluded meats that were offal, liver, or preserved.
+## Excluded animal_ed[65] as an outlier, though a remarkable one.
+##  Horse, ass, mule or hinny meat, fresh, chilled or frozen    47317    51779
+##  Bovine meat cured    21909    23799
+## Also: why no fish?
+
+### USDA plant data ####
+## These plants aren't *easily* grepped in a function,
+## mostly because the study's names are not similar to the USDA's names.
+## e.g. "aubergines(egg-plants)" vs. "eggplants"
+## Or because the products themselves weren't easy to match.
+## e.g. sugar, coffee, cocoa, and tea are all plants;
+## the USDA lists them as many diverse products, but not as raw plants.
+## *!*!* Also, what does "nes" mean? ... I'm going with "not explicitly stated".
