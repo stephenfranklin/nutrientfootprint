@@ -13,13 +13,13 @@ Articles explaining how agricultural water use is much higher than municipal use
 http://www.sacbee.com/opinion/op-ed/soapbox/article17332904.html
 http://www.thedailybeast.com/articles/2015/03/30/how-growers-gamed-california-s-drought.html
 
-Articles that showed the almond as symbolic of ineffective water restrictions:
-http://www.thedailybeast.com/articles/2015/03/30/how-growers-gamed-california-s-drought.html
-http://www.splendidtable.org/story/farming-in-californias-drought-almonds-take-more-total-water-than-any-other-crop
-http://www.motherjones.com/environment/2015/01/california-drought-almonds-water-use
-http://www.motherjones.com/environment/2014/02/wheres-californias-water-going
-http://www.motherjones.com/environment/2015/04/real-problem-almonds
-http://gizmodo.com/how-the-drought-is-devastating-californias-1-food-exp-1517881858
+Articles that showed the almond as symbolic of ineffective water restrictions:  
+http://www.thedailybeast.com/articles/2015/03/30/how-growers-gamed-california-s-drought.html  
+http://www.splendidtable.org/story/farming-in-californias-drought-almonds-take-more-total-water-than-any-other-crop  
+http://www.motherjones.com/environment/2015/01/california-drought-almonds-water-use  
+http://www.motherjones.com/environment/2014/02/wheres-californias-water-going  
+http://www.motherjones.com/environment/2015/04/real-problem-almonds  
+http://gizmodo.com/how-the-drought-is-devastating-californias-1-food-exp-1517881858  
 http://www.bloombergview.com/articles/2015-04-07/california-s-almond-farmers-have-become-a-target
 
 Articles denouncing the over-emphasis of almonds as a water-intensive crop in favor of alfalfa:
