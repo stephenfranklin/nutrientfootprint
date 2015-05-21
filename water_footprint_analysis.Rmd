@@ -23,7 +23,7 @@ library(xtable)
 load("water_footprint_table.RData")
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 setkey(water,protein)
 rm(California_footprint, Global_avg_footprint, Products, protein)
 attach(water)
@@ -35,6 +35,12 @@ par(mfrow = c(1,1))
 pairs.panels( water[,c(2:8),with=F], smooth=T, ellipses=F, cor=T,
       main = "Water Footprint Correlations", pch=21, 
       bg = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
+cor(Global_avg_footprint, as.numeric(kingdom))
+cor(Global_avg_footprint, protein)
+cor(Global_avg_footprint, water$water)
+cor(Global_avg_footprint, fat)
+cor(Global_avg_footprint, water$carb)
+cor(Global_avg_footprint, kcal)
 ```
 
 Looking at the pairs plot, it seems there's no clear distinction between animal-sourced foods and plant-sourced foods based upon these basic nutritional components. There are some interesting things. California seems to have a few foods that have very different water footprints compared to the global average. Protein seems to correlate positively with water footprint, as does energy. Fat somewhat correlates with water footprint globally, but not at all in California. Carbohydrates correlate not at all, and water content correlates negatively with water footprint.
@@ -49,7 +55,7 @@ summary(wfit0)$r.squared
 summary(wfit0)$coefficients
 ```
 
-In this overall weighted model, not many of these variables seem significant, and the model only explains 69% of the variance. The only variable with a marginally significant p-value is protein at **0.054**.
+In this overall weighted model, not many of these variables seem significant. The model explains 71% of the variance. The only variable with a marginally significant p-value is protein at **0.022**.
 
 Let's look at water footprint versus protein alone.
 ```{r}
@@ -57,10 +63,10 @@ wfit1 <- lm(Global_avg_footprint ~ protein, water)
 summary(wfit1)$r.squared
 summary(wfit1)$coefficients
 ```
-Protein alone explains **56%** of the variance, but with a strong p-value.
+Protein alone explains **58%** of the variance, but with a strong p-value.
 The intercept itself, however, is not significant.
 
-So based on an unpredictable intercept, we would expect a 360 m3/ton increase in the water footprint of a food for each 1% increase in its typical measure of protein.
+So based on an unpredictable intercept, we would expect a **378 $m^3/ton$** increase in the water footprint of a food for each 1% increase in its typical measure of protein.
 
 ### Do animal-based foods have a bigger water footprint than plant-based foods?
 
@@ -69,7 +75,7 @@ wfit2 <- lm(Global_avg_footprint ~ as.numeric(kingdom), water)
 summary(wfit2)$r.squared
 summary(wfit2)$coefficients
 ```
-It seems the answer is no.
+It seems the answer is no. Even though `kingdom` is marginally significant, this model explains only **9%** of the variance.
 
 
 Let's look at energy:
@@ -78,9 +84,9 @@ wfit3 <- lm(Global_avg_footprint ~ kcal, water)
 summary(wfit3)$r.squared
 summary(wfit3)$coefficients
 ```
-Not surprisingly, energy is positively correlated with water footprint. We would expect (upon a still unpredictable intercept) a 15 m3/ton increase in water footprint for each kilocalorie increase in a food.
+Not surprisingly, energy is positively correlated with water footprint. We would expect (upon a still unpredictable intercept) a **15 $m^3/ton$** increase in water footprint for each kilocalorie increase in a food.
 
-Just for fun, let's look for an interaction between kingdom and protein
+Just for fun, let's look for an interaction between `kingdom` and `protein`:
 ```{r}
 wfit4 <- lm(Global_avg_footprint ~ protein * kingdom, water)
 summary(wfit4)$r.squared
@@ -88,12 +94,12 @@ summary(wfit4)$coefficients
 ```
 
 The reference category for `kingdom` is "1" -- plants, 
-which has an (insignificant) intercept of 218 m3/ton. 
-The slope for *animal* is 396. 
-The change in intercept for *animal* is 1189.
-And the change in slope for *animal* is -126.
+which has an (insignificant) intercept of **218 $m^3/ton$**.   
+The slope for *animal* is **396**.  
+The change in intercept for *animal* is **1119**.  
+And the change in slope for *animal* is **-92**.  
 
-The interaction isn't significant (p: 0.26 > 0.05)
+The interaction isn't significant (**p: 0.26 > 0.05**)
 
 Let's plot the regression lines for animal versus plant sources,
 with protein as an interaction:
@@ -112,6 +118,7 @@ abline(c(wfit4$coeff[1] + wfit4$coeff[3],wfit4$coeff[2] +wfit4$coeff[4]),col="re
 The two food sources seem closely correlated, and that agrees with the interaction being insignificant.
 
 But let's check the residuals:
+
 ```{r}
 par(mfrow = c(1,1))
 ew <- wfit4$residuals 
@@ -120,7 +127,10 @@ plot(kingdom, ew,
      ylab = "Residuals")
 ```
 
-compared to fit1 (water footprint vs. protein):
+A residual is the difference between the observed data and the predicted data. Over a quarter of the residuals are oultiers, so it's not a strong model.
+
+Looking at the residuals of `fit1` (water footprint vs. protein):
+
 ```{r}
 par(mfrow = c(1,1))
 ew <- wfit1$residuals 
@@ -128,22 +138,24 @@ plot(kingdom, ew,
      xlab = "kingdom (0=plant)",
      ylab = "Residuals")
 ```
-Very similar. Lots of outliers in plants.
+
+The `wfti1` residuals are very similar to those of `wfit4` -- with lots of outliers in plants -- so it's only slightly better. 
 
 Resdiuals and Leverage for water footprint vs. protein:
+
 ```{r}
 par(mfrow = c(2, 2))
 plot(wfit1)
 ```
 
-Three products -- cashew, beef, and almond -- have somewhat more leverage in the model. But their leverage is less than 0.5, so they don't bias the model very much. 
+Three products -- cashew, beef, and almond -- have somewhat more leverage in the model. But their leverage is less than **0.5**, so they don't bias the model very much. 
 
 Analysis of variance to compare the models:
 ```{r}
 anova(wfit0, wfit1, wfit2, wfit3, wfit4)
 ```
 
-Somewhat strangley, anova shows that wfit4 (predicting the footprint by kingdom holding protein constant) is the best model.
+Somewhat strangley, anova shows that `wfit4` (predicting the footprint by kingdom holding protein constant) is the best model.
 
 Let's see what an automatic fit does:
 ```{r}
@@ -153,9 +165,9 @@ summary(wfit.s)$coeff
 summary(wfit.s)$r.squared
 ```
 
-Interestingly, the stepAIC found a model that explains 69% of the variance by including water as well as protein and energy.
+Interestingly, the `stepAIC()` found a model that explains **70%** of the variance by including water as well as `protein` and `kcal` (energy).
 
-Still, protein has the highest significance. So for simplicity, I'd like to focus on just that one factor. I'll show kingdom because I think it's non-significance is interesting and relevant.
+Still, `protein` has the best correlation (**0.76**) and the highest significance. So for simplicity, I'd like to focus on just that one factor. I'll show `kingdom` because I think it's non-significance is interesting and relevant.
 
 ```{r}
 w1 <- ggplot(data=water, aes(y = Global_avg_footprint, x = protein, color=kingdom)) +

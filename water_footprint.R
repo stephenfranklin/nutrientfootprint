@@ -437,7 +437,7 @@ animal_s <- rbind(animal_s,poultry)
 animal_s <- animal_s[(Products!="poultry")]
 
 ### Comment on the poultry data -- written after completion of the analysis.
-## So I've separated poultry into three data points 
+## Initially I separated poultry into three data points 
 ## which all have the same water footprint but different protein content. 
 ## Their footprints were averaged presumedly because they were very similar.
 ## Creating more data points adds more weight to what was "poultry".
@@ -449,10 +449,14 @@ animal_s <- animal_s[(Products!="poultry")]
 ## I could average the protein data back into a single "poultry" data point.
 ## (The model has a higher R2 with poultry as a single data point.)
 ## Or I could remove duck as a compromise.
-## The animal water footprint data is grouped, whereas the plant data is individualized.
-## For now, I've chosen to leave all three in because I think this isn't really about
-## finding the best predictive model, 
-## rather it's about finding individual water efficient foods.
+## One source of bias is that the animal water footprint data is grouped, 
+##   whereas the plant data is individualized.
+## I've chosen to average the three back into "poultry" because
+##   it's more consistent with both
+##   the UNESCO-IHE waer footprint data, and
+##   the USDA total production data which excluded specific data
+##   for chicken and turkey,
+##   and because they have very similar nutrient values.
 
 ### Get USDA data
 animal.protein.list <- make_nutrient_list(n.protein, c("1300","0100","1700","1000","0500"))
@@ -464,8 +468,8 @@ animal.carb.list <- make_nutrient_list(n.carb, c("1300","0100","1700","1000","05
 ### Obtain median values for each nutrient
 animal_s$protein <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
        filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
-animal_s$protein.alldata <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
-                            filter2="\\b(dry|dried|condensed|evaporated)\\b")
+#animal_s$protein.alldata <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
+#                            filter2="\\b(dry|dried|condensed|evaporated)\\b")
 ## Commented out because they were quick tests for which I altered the function to give the mean instead.
 #animal_s$protein.mean <- sapply(animal_s$Products,usda_median,nutrient_list=animal.protein.list,
 #                           filter1="\\braw\\b",filter2="\\b(dry|dried|condensed|evaporated)\\b")
@@ -483,6 +487,17 @@ animal_s$mass <- rowSums(animal_s[, .(protein,carb,fat,water)])
 #quantile(animal_s$mass)
     ### The mass should be close to 100,
     ### as the nutrients are measured in grams per 100 grams of product.
+
+poultries <- subset(animal_s, Products=="chicken" | Products=="turkey" | Products=="duck")
+poultry <- as.data.table(as.list( round(colMeans(poultries[,-1,with=F]),digits = 3) ))
+poultry$Products = "poultry"
+
+animal_p <- rbind(animal_s,poultry)
+animal_p <- subset(animal_p, Products!="chicken" & Products!="turkey" & Products!="duck")
+animal_s <- animal_p
+rm(poultries)
+rm(poultry)
+rm(animal_p)
 
 ### add plant/animal factor:
 animal_s[,kingdom:=factor(.N)]
