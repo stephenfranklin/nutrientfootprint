@@ -41,6 +41,36 @@ w2                                 ## works in RStudio
 #w2$show('iframesrc', cdn = TRUE)   ## works in shiny-server
 ``` 
 
+<!-- Use this one for pdf version.
+```{r plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
+### protein vs global_avg_footprint
+### NON-interactive
+w1 <- ggplot(data=na.omit(water), aes(y = CA_L_per_100g, x = protein, color=kingdom)) +   
+        geom_point(data = subset(na.omit(water), protein <= 3 & CA_L_per_100g <= 300, na.omit=T)) 
+w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"), 
+                              values=c("darkred", "green4"),
+                              name= "Source")
+w1 <- w1 + geom_smooth(data = na.omit(water), method="lm", fullrange=TRUE)
+w1 <- w1 + geom_text(aes(label=ifelse(
+                                protein > 3 | 
+                                CA_L_per_100g > 300, 
+                                Products,'')), 
+                     hjust=0,just=0, size=3,
+                     position = position_jitter(w = 0.5, h = 15),
+                     show_guide = F)
+w1 <- w1 + labs(y=expression("Water Footprint: California (L/100g)"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods in California")
+w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
+   color="brown"), legend.position="top")
+w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
+#w1 <- w1 + expand_limits(y = c(0, 2000), x = c(0, 30) )
+ggsave("prot_US_CA.svg", width=10, height=8)
+#ggsave("prot_US_CA.pdf", width=8)
+### The jitter function shifts the data points to reduce overlap.
+### Because it uses randomness, I ran it a few times and chose the clearest version.
+```
+![The water footprint is positively correlated with protein content.](./prot_US_CA1.svg)
+-->
+
 #### Figure 1 (Interactive): Water Footprint vs. Protein: California
 
 ****
@@ -141,7 +171,7 @@ kable(Gl_adjfp_prot_10, format = "html", caption = "Table 4: Global Average")
 
 # Brazil Nuts
 
-The most water efficient food in this dataset is the Brazil nut, which is definitely an outlier. It's water footprint of 2 liters per gram protein is so low that it seems suspicious. All the other nuts have extraordinarily high water footprints. There's no biological reason the Brazil nut should be so water efficient; the reason perhaps is in its method of production. Brazil nuts are unique in that they are gathered from existing trees rather than from plantations. The existing infrastructure of old trees means that ground water needn't be diverted to grow a tree first, and therefore needn't be included (or just isn't measurable) in an accounting of the water footprint. Of course if everyone started eating tons of Brazil nuts, then they'd have to start growing more trees which would likely have a very high water footprint.
+The most water efficient food in this dataset is the Brazil nut, which is definitely an outlier. It's water footprint of 2 liters per gram protein is so low that it seems suspicious. All the other nuts have extraordinarily high water footprints. There's no biological reason the Brazil nut should be so water efficient; the reason perhaps is in its method of production. Brazil nuts are unique in that they are gathered from existing trees rather than from plantations. The existing infrastructure of old trees means that ground water needn't be diverted to grow a tree first, and therefore needn't be included (or just isn't measurable) in an accounting of the water footprint. Of course if everyone started eating tons of Brazil nuts, then they'd have to start growing more trees which would likely have a very high water footprint. . . for Brazil, that is. In California, Brazil nuts represent imported virtual water. 
 
 
 # Comparison of Water Footprints: California vs. Global Average 
@@ -174,7 +204,59 @@ ggsave("differences.svg", width=8)
 
 ##### Figure 2: Comparison of 10 Differing Water Footprints: California vs. Global Average.
 
-This plot shows vastly differing water footprints of some foods grown in California versus a global average. Garbanzo beans (chickpeas) stand out as being ridiculously thirsty in California, but quite water efficient elsewhere. On the other hand, pistachios seem to have a relatively low water footprint in California.
+Figure 2 shows vastly differing water footprints of some foods grown in California versus a global average. Garbanzo beans (chickpeas) stand out as being ridiculously thirsty in California, but quite water efficient elsewhere. On the other hand, pistachios seem to have a relatively low water footprint in California.
+
+```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
+require(rCharts)
+w2 <- nPlot(G_L_per_100g ~ protein, 
+            group = 'kingdom',  name = 'Source',
+            data = water, 
+            type = 'scatterChart')
+w2$chart(color = c("green", "darkred")) 
+w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
+                                return e.point.Products
+                            } !#")
+w2$set(title = "Water Footprint vs. Protein: Global Average")
+w2$xAxis(axisLabel = 'Protein (%)')
+w2$yAxis(axisLabel = "Water Footprint: Global Average (L/100g)" )
+w2$chart(showControls = F)  ## turn off stupid magnify.
+w2                                  ## RStudio; not Shiny-server
+#w2$show('iframe', cdn = TRUE)      ## RStudio; not Shiny-server
+#w2$show('iframesrc', cdn = TRUE)   ## not RStudio; shiny-server
+```
+
+<!-- Use this one for the pdf version.
+```{r plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
+### protein vs global_avg_footprint
+### NON-interactive
+w1 <- ggplot(data=water, aes(y = G_L_per_100g, x = protein, color=kingdom)) +
+        geom_point(data = subset(water, protein <= 3 & G_L_per_100g <= 300))
+w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"),
+                              values=c("darkred", "green4"),
+                              name= "Source")
+w1 <- w1 + geom_smooth(data = water, method="lm", fullrange=TRUE)
+w1 <- w1 + geom_text(aes(label=ifelse(
+                                protein > 3 |
+                                G_L_per_100g > 300,
+                                Products,'')),
+                     hjust=0,just=0, size=3,
+                     position = position_jitter(w = 0.5, h = 15),
+                     show_guide = F)
+w1 <- w1 + labs(y=expression("Water Footprint: Global Average (L/100g)"),
+            x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods: Global Average")
+w1 <- w1 + theme(axis.title=element_text(face="bold.italic",
+   color="brown"), legend.position="top")
+w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
+#w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
+ggsave("prot_Global.svg", width=10, height=8)
+ggsave("prot_Global.pdf", width=8)
+### The jitter function shifts the data points to reduce overlap.
+### Because it uses randomness, I ran it a few times and chose the clearest version.
+```
+![The water footprint is positively correlated with protein content.](./prot_Global1.svg)
+-->
+
+##### Figure 3 (Interactive):  Water Footprint vs. Protein: Global Average.
 
 # About the Data.
 
@@ -199,8 +281,7 @@ $('.myIframe').css('height', $(window).height()*0.6+'px');
    
 But their levels of protein seem unusually low.
 
-The proportion of protein that we used was obtained by taking the median of just the raw products from the USDA list. 
-Choosing only raw foods seemed reasonable because the water footprint reports don't mention anything as cooked, which seems reasonable. The USDA nutrition numbers for cooked (or otherwise prepared) foods have a  higher variance than raw foods. The raw value has its own bias of course. Primarily, legumes (or pulses) which must be soaked to be eaten have a much higher proportion of protein when dry. Choosing raw nutrients levels seems to make the most sense for most foods. Cooked meats have much higher protein levels than raw meats because much of the water and fat is evaporated.
+The proportion of protein that we used was obtained by taking the median of just the raw products from the USDA list. Choosing only raw foods seemed reasonable because the water footprint reports don't mention anything as cooked, which seems reasonable. The USDA nutrition numbers for cooked (or otherwise prepared) foods have a  higher variance than raw foods. The raw value has its own bias of course. Primarily, legumes (or pulses) which must be soaked to be eaten have a much higher proportion of protein when dry. Choosing raw nutrients levels seems to make the most sense for most foods. Cooked meats have much higher protein levels than raw meats because much of the water and fat is evaporated.
 
 **Table 6: Comparison of the protein content of beef.**
 
@@ -234,16 +315,135 @@ However, when we take the sheer quantity of food produced into account, as Pacif
 
 ![<a href=pacinst.org/wp-content/uploads/sites/21/2013/02/ca_ftprint_full_report3.pdf>The water footprint of alfalfa and animal feed is huge.</a>](./fig7_Californias_water_footprint_fulton_2012.png)
 
-#### Figure 3: Excerpted "Figure 7" from Fulton, Cooley, Gleick 2012.
+#### Figure 4: Excerpted "Figure 7" from Fulton, Cooley, Gleick 2012.
     
-    
-Almonds produced in California in 2013 amounted to 900 million kilograms (2 billion pounds). The water footprint was 2.63 billion cubic meters (2.13 million acre feet) -- about the same volume as Mount Everest. (And that's not counting grey water.) Two thirds of those almonds were exported (USDA CA) (Pacinst). If Americans stopped eating almonds, we can assume that would have some effect economically. Perhaps the price would drop. Perhaps that one third domestic portion of almonds would be exported as well. Or perhaps production would be reduced.
+### Almonds
 
-If production of almonds for domestic use was reduced to zero for a year, that would save about 876 million cubic meters of water. It would be enough to refill California's second largest resevoir, Lake Oroville, to a normal level (water.ca.gov). In comparison, the mandatory water reduction in Californian cities amount to a savings of 1.85 billion cubic meters (1.5 million acre feet) over nine months (water.ca.gov). A one-third reduction in  almonds would save half of the total amount saved by the mandatory water reduction. In 2013, the almond crop was valued at $5.77 billion.
+Almonds produced in California in 2013 amounted to 900 million kilograms (2 billion pounds). The water footprint was 2.63 billion cubic meters (2.13 million acre feet) -- about the same volume as Mount Everest. (And that's not counting grey water.) Two thirds of those almonds were exported<!-- (USDA CA) (Pacinst)-->. To explore an extreme example, if Americans stopped eating almonds, we can assume that would have some effect economically. Perhaps the price would drop. Perhaps that one third domestic portion of almonds would be exported as well. Or perhaps production would be reduced.
 
-Animal products are actually a much, much bigger contributer to California's water footprint. California's production of "animal feed" as well as "Alfalfa, Straw, and Hay" (which is used as roughage in animal feed but counted separately because of a difference in imports/exports) account for about 26 billion cubic meters (21 million acre feet) of water (not counting grey water) or ten Mount Everests of water (pacinst).
+If production of almonds for domestic use was reduced to zero for a year, that would save about 876 million cubic meters of water. It would be enough to refill California's second largest resevoir, Lake Oroville, to a normal level<!-- (water.ca.gov)-->. In comparison, the mandatory water reduction in Californian cities amount to a savings of 1.85 billion cubic meters (1.5 million acre feet) over nine months<!-- (water.ca.gov)-->. That one-third reduction in almonds would save nearly half of the amount saved by the mandatory water reduction. In 2013, the almond crop was valued at $5.77 billion, so that theoretical example  also represents a huge loss of income and tax revenue.
 
-About 1.6 billion cubic meters (1.3 million AF) of meat and dairy products and 1.2 billion cubic meters (1 million AF) of alfalfa, straw, and hay are exported internationally (pacinst). California is actually an importer of animal feed. Apparently that enormous water footprint represents *not enough* animal feed (pacinst 18). There is a huge amount of Californian meat and dairy products that are exported and imported, both nationally and internationally, so it's less easy to estimate the possible amount of water that would be saved by refraining from meat. Suffice to say, it's hard to look at those plots and not think about taking an extra long shower instead of eating a burger. As an omnivore, it just got a lot harder to mock the vegans.
+### Meat & Dairy
+
+Animal sourced products are actually a much bigger contributer to California's water footprint. The USDA agricultural reports for California don't list meat directly (except for turkey meat), but list the amount of live animals, and the number of cattle or pigs slaughtered, their weight, and their dollar value. Regarding chicken, the report says this:  "No value for 2013 Chickens, All due to USDA ERS confindetiality procedures" (sic). As for poultry data: "Withheld to avoid disclosing data for individual farms." They then list all the data we'd expect for turkey meat.
+
+In 2013, California produced 365,300,000 lbs of turkey meat worth $242,925,000.
+The total water footprint for Californian turkey meat in 2013 was 297,936 acre feet. So turkey meat seems not to be a leading contributer to California's overall water footprint, and it has relatively good rate of water footprint per protein.
+
+Of 5.3 million cattle and calves in California in 2013, 1.9 were slaughtered, yielding 513,000 short tons of beef and consuming 7 billion cubic meters of water (5.4 million acre feet), a total water footprint that's twice the size that of  almonds. And that's just what was produced. At 12% of the U.S., Californians probably consumed three times that much beef, imported mostly from other States.
+
+There were 2.365 million Californian pigs slaughtered in 2013 yielding 165,136 short tons of pork for a total water footprint of 825 million cubic meters (669,000 acre feet).
+
+California's dairies produced 41.3 billion pounds of milk in 2013 for a total water footprint of 15.4 billion cubic meters (12.5 million acre feet).
+
+### Animal Feed
+
+Animal feed is the primary contributer to the water footprint of animal sourced food, and the water footprint of animal products includes the water footprint of animal feed. California's production of "animal feed" as well as "Alfalfa, Straw, and Hay" (which is used as roughage in animal feed but counted separately because of a difference in imports/exports) account for about 26 billion cubic meters (21 million acre feet) of water (not counting grey water) or ten Mount Everests of water<!-- (pacinst)-->. If we check the math by dividing that volume by the total mass produced from Table 8, we get a water footprint of $892 m^3/ton$. The water footprint of corn -- over 60% of U.S. animal feed -- is $722 m^3/ton$. Other components have much higher water footprints, such as wheat at $1406 m^3/ton$. So the two numbers are close enough that we can consider Pacific Institute's estimate a reasonable one.<!--(pacinst)-->
+
+The water footprints of all the animal products should add up to footprint slightly greater than that of the animal feed (21 million acre feet). The water footprints of beef and turkey and pork and milk add up to nearly 19 million acre feet, which is a reasonable considering we don't have the data for chicken meat. Assuming we eat at least ten times as much chicken as turkey, that would put the water footprint above 22 million acre feet.  
+
+### Conclusion
+
+From the perspective of maintaining sustainable water usage during the California drought, it seems useful to reduce production of water intensive products. A personal level of activism by changing consumption may or may not be influential in changing hugely profitable agricultural practices. But it is a question that is out there. The answer to that question is to eat less meat, fewer nuts, and more Brazil nuts, and more imported food in general. Hope that helps out. 
+
+
+<!--
+****
+
+Animal feed is separated into two main components: 20% concentrates and 80% roughages. Concentrates are feeds which contain high levels of nutrients and less than 18% crude fiber content. Concentrates include cereals, roots and tubers, oil crops, oil meals, bran, molasses, pulses, sugar crops, fruits and vegetables. Roughages are feeds with over 18% crude fiber content and low nutrient density. Roughages include forage cereals such as corn, oats, sorghum; oilseeds such as winter rape; roots and tubers such as potatoes, beets, swedes, and turnips; pulses such as field peas, beans, sweet lupins, and vetches; pumpkins; cabbages; sugarcane; lucerne (alfalfa); berseem; pastures; and straw and chaff from cereals and pulses. Other synonyms for animal feed are fodder, forage, hay, haylage, greenchop, etc.
+
+The UNESCO_IHE reports list water footprints (in $m^3/ton$) and ratios of the many ingredients of animal feed products by nation. But strangely, the water footprint for alfalfa, which represents a large portion of animal feed grown in California, isn't provided. The ratio of ingredients in animal feed widely varies by nation as well as by animal. The USDA Field Crops Report for California lists the production weight by year for several categories that may constitute animal feed including "Forage, Alfalfa", "Hay, Alfalfa", "Haylage And Greenchop", "Corn For Silage", and "Sorghum For Silage". Pacific Intstitute's report (Figure 4) shows California's overall water footprints (in acre-feet per year). 
+
+##### Table 8: Animal Feed Crops in California in 2013
+
+Crop                | Weight (short tons)   | notes
+--------------------|-----------------------|-------
+corn for silage     |  10,998,000           |
+forage, all         |   9,362,000           | incl. alfalfa forage
+hay, all            |   7,646,000           | incl. alfalfa hay
+haylage & greenchop |   3,472,000           |
+sorghum for silage  |     646,000           | 2008
+total               |  32,124,000           |
+
+http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFieldCrops.pdf
+
+
+
+
+
+U.S. beef 2013 (billion lb): 
+consumption: 25.5; production: 25.7; exported: 2.6
+imported: 2.4;
+http://www.ers.usda.gov/topics/animal-products/cattle-beef/statistics-information.aspx
+
+beef yield is 45% of live weight. http://www.cattletoday.com/forum/viewtopic.php?f=8&t=43995
+
+cows slaughtered in 2013: 32.459 million
+25.7*10^9 lbs of beef / 32*10^6 cows = 800 lbs per cow. at 1660 per cow and a 50% meat yield that is a perfectly reasonable number of slaugtered cows.
+http://www.humanesociety.org/news/resources/research/stats_slaughter_totals.html
+
+25.5 billion lbs = 1,275,000 short tons.
+
+25.7 billion lbs * 14191 m^3/metric ton = 165.4 billion cubic meters
+= 134.1 million acre feet
+
+California is 12% of the US population.
+consumption: .12 * 25.5 = 3.06 billion lbs = 1,530,000 short tons
+1.5 million short tons * 14191 m^3/metric ton = 19.31 billion cubic meters
+= 15.65 million acre feet.
+
+2013
+89 million cattle in US. 24.3 * 10^8 / 88 * 10^6 = 276 lbs
+should be more like 4-500. so maybe half the cattle were used for dairy.
+Cattle and calves on feed for slaughter in all feedlots, 12.7 million:
+at 50% carcass meat, 12.7*10^6 * 1660 lbs/2 =~ 10 billion lbs
+but there was 25.7 billion lbs produced.
+
+
+2013 CA
+5.3 million cattle and calves. 
+CA produced 1 million sh tons of live cattle 2013
+5.3 million cattle * 1299/2000  = 3.4 million sh tons 
+if all the cattle were of a small breed: 1.6 million tons
+
+1,742,000 cattle slaughtered at a weight of 1299 lb. p4. 
+1,742,000 * 1299/2000 = 1,131,429 sh tons
+1,131,429 sh tons *0.45 = 509,143 sh tons of beef.
+509,143 sh tons * 14191 m^3/metric ton = 6.555 billion cubic meters water
+= 5.314 million acre-feet.
+
+176,000 calves at 102 lbs
+176,000 * 102/2000 = 8976 sh tons
+8976 sh tons *0.45 = 4039 sh tons
+4039 sh tons * 14191 m^3/metric ton = 0.52 billion cubic meters water
+= 0.042 million acre-feet.
+
+
+pigs 2,365,000 at 245 lb.
+2365000 * 245/2000 * 0.57 = 165,136 sh tons.
+165136 sh tons * 5508 m^3 per metric ton = 825 million m^3 = 669,000 acre feet
+yield is 57%
+http://www.oda.state.ok.us/food/fs-hogweight.pdf
+
+Of the 5.3 million:
+beef cows that have calved 610,000  milk cows that have calved 1,780,000
+heifers beef cow replacement 110,000 heifers milk cow replacement 780,000
+heifers other 220,000
+steers 620,000   bulls 70,000   calves (under 500 lbs) 1,110,000
+
+CA total cattle on feed i.e. to be meat 510,000
+http://usda.mannlib.cornell.edu/usda/nass/Catt//2010s/2014/Catt-01-31-2014.pdf
+510,000 * 1660 lbs /2 = 423 million lbs of beef
+423*10^6 lbs * 14191 m^3/metric ton = 2.723 billion m^3 = 2.2 million acre feet
+
+
+
+US
+Year  Cattle Cows Beef-Production 
+(000) (000) (mil lbs.) (lbs.) 
+1980 111,242 47,866 21,469 449 
+2009 94,521 41,045 25,951 632 
+
 
 
 Top California Commodities in 2013
@@ -263,121 +463,17 @@ Nursery             | NA                    | 1,219,800,000 | 10
 corn for grain      |    982,800            |   194,805,000 | 32
 beans, dry          |     57,500            |    61,410,000 | 49
 
-Regarding chicken, the report says this:  
-"No value for 2013 Chickens, All due to USDA ERS confindetiality procedures."  
-As for poultry data:  
-"Withheld to avoid disclosing data for individual farms."
+http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CA_Ag_Overview.pdf
 
 
-****
+California’s dairies produced 41.3 billion pounds of milk, accounting for almost 21 percent of the nation's milk supply.  (usda p1)
+cream 1484 ;  185,664,000 +  127,508,000 +  27,940,000 = 341112000 lb =170556
+milk 822 ;    593,910,000 +  583,106,000 + 54,601,000 = 1231617000 lb =615809
 
-Correlations
+822 (m^3/metric ton) * 20.6*10^6 short tons = 12.5 million acre feet = 15.4 km^3
+1484 (m^3/metric ton) * 20.6*10^6 short tons = 22.5 million acre feet = 27.7 km^3
 
-```{r pairs, echo=F, comment=F, warning=F, error=F, eval=F}
-require(psych)
-svg(file="water_pairs.svg", width = 8)
-par(mfrow = c(1,1))
-pairs.panels( water[,c(3:8),with=F], smooth=T, ellipses=F, cor=T,
-      main = "Water Footprint Correlations: Global Average", pch=21, 
-      bg = 2 + (as.numeric(water$kingdom) < 2)) ## color: red=2,green=3, plant=1,animal=2
-dev.off()
-```
-![Exploratory pairs plot for water footprints.](./water_pairs.svg)
-
-
-# Footprint vs. Protein
-
-
-```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
-require(rCharts)
-w2 <- nPlot(G_L_per_100g ~ protein, 
-            group = 'kingdom',  name = 'Source',
-            data = water, 
-            type = 'scatterChart')
-w2$chart(color = c("green", "darkred")) 
-w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
-                                return e.point.Products
-                            } !#")
-w2$set(title = "Water Footprint vs. Protein: Global Average")
-w2$xAxis(axisLabel = 'Protein (%)')
-w2$yAxis(axisLabel = "Water Footprint: Global Average (L/100g)" )
-w2$chart(showControls = F)  ## turn off stupid magnify.
-w2                                  ## RStudio; not Shiny-server
-#w2$show('iframe', cdn = TRUE)      ## RStudio; not Shiny-server
-#w2$show('iframesrc', cdn = TRUE)   ## not RStudio; shiny-server
-```
-
-
-```{r plot_pro_v_foot, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
-### protein vs global_avg_footprint
-### NON-interactive
-w1 <- ggplot(data=water, aes(y = G_L_per_100g, x = protein, color=kingdom)) +
-        geom_point(data = subset(water, protein <= 3 & G_L_per_100g <= 300))
-w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"),
-                              values=c("darkred", "green4"),
-                              name= "Source")
-w1 <- w1 + geom_smooth(data = water, method="lm", fullrange=TRUE)
-w1 <- w1 + geom_text(aes(label=ifelse(
-                                protein > 3 |
-                                G_L_per_100g > 300,
-                                Products,'')),
-                     hjust=0,just=0, size=3,
-                     position = position_jitter(w = 0.5, h = 15),
-                     show_guide = F)
-w1 <- w1 + labs(y=expression("Water Footprint: Global Average (L/100g)"),
-            x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods: Global Average")
-w1 <- w1 + theme(axis.title=element_text(face="bold.italic",
-   color="brown"), legend.position="top")
-w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
-#w1 <- w1 + expand_limits(y = c(0, 17500), x = c(0, 30) )
-ggsave("prot_Global.svg", width=10, height=8)
-ggsave("prot_Global.pdf", width=8)
-```
-<!-- The jitter function shifts the data points to reduce overlap.
-    Because it uses randomness, I ran it a few times and chose the clearest version.-->
-![The water footprint is positively correlated with protein content.](./prot_Global.svg)
-<!--![The water footprint is positively correlated with protein content.](./prot_Global1.svg)-->
-<!--![The water footprint is positively correlated with protein content.](./prot_Global2.svg)-->
-
-
-# Footprint vs. Protein: California
-```{r plot_pro_v_foot_CA, comment=F, echo=F, results='asis', fig.height=6, fig.width=8, eval=F}
-### protein vs global_avg_footprint
-### NON-interactive
-w1 <- ggplot(data=na.omit(water), aes(y = CA_L_per_100g, x = protein, color=kingdom)) +   
-        geom_point(data = subset(na.omit(water), protein <= 3 & CA_L_per_100g <= 300, na.omit=T)) 
-w1 <- w1 + scale_color_manual(breaks = c("plant", "animal"), 
-                              values=c("darkred", "green4"),
-                              name= "Source")
-w1 <- w1 + geom_smooth(data = na.omit(water), method="lm", fullrange=TRUE)
-w1 <- w1 + geom_text(aes(label=ifelse(
-                                protein > 3 | 
-                                CA_L_per_100g > 300, 
-                                Products,'')), 
-                     hjust=0,just=0, size=3,
-                     position = position_jitter(w = 0.5, h = 15),
-                     show_guide = F)
-w1 <- w1 + labs(y=expression("Water Footprint: California (L/100g)"), x = "Protein (%)", title="Water Footprint vs. Protein of Raw Foods in California")
-w1 <- w1 + theme(axis.title=element_text(face="bold.italic", 
-   color="brown"), legend.position="top")
-w1 <- w1 + scale_y_continuous(breaks=seq(0,2200,200))
-#w1 <- w1 + expand_limits(y = c(0, 2000), x = c(0, 30) )
-ggsave("prot_US_CA.svg", width=10, height=8)
-#ggsave("prot_US_CA.pdf", width=8)
-```
-<!-- The jitter function shifts the data points to reduce overlap.
-    Because it uses randomness, I ran it a few times and chose the clearest version.-->
-![The water footprint is positively correlated with protein content.](./prot_US_CA.svg)
-<!--![The water footprint is positively correlated with protein content.](./prot_US_CA1.svg)-->
-  
-
-
-****
-
-<!--
-
-
-
+*****
 
 http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CALivestockandDairy.pdf
 dairy p7
@@ -389,7 +485,10 @@ eggs 5.05 billion
 cattle and calves live 2,039,468,000 lbs    $3,059,175,000
 sheep and lambs live 45,791,000 lbs         $   67,182,000 2010
 hogs and pigs live 47,708,000 lbs           $   41,556,000
-turkey meat 365,300,000 lbs 
+turkey meat 365,300,000 lbs                 $  242,925,000
+
+turkey 165697 metric tons * 2218 m^3/ metric ton = 367.5 million m^3 of water
+= 297936 acre feet.
 
 if all the cattle were used for beef that would be
 beef 
@@ -400,29 +499,8 @@ hay, alfalfa:
 That seems reasonable; it's close to what rice is.
 
 
-
 meat animals 2013 $3,088,751,000
 
-Discuss where this data comes from, and how they are missing alfalfa (even though people do eat alfalfa) and other fodder crops (hay). Show quote where the researchers explain that they're including fodder in their meat estimates.
-
-"The water footprint of a live animal consists of
-different components: the indirect water footprint
-of the feed and the direct water footprint related to
-the drinking water and service water consumed. . . The water footprint of an animal related to the
-feed consumed consists of two parts: the water
-footprint of the various feed ingredients and the
-water that is used to mix the feed."
-
-http://waterfootprint.org/media/downloads/Mekonnen-Hoekstra-2012-WaterFootprintFarmAnimalProducts.pdf pp2-3 (pp402-3 as labeled) 
-
-*****
-Total outputs of CAlifornia
-
-
-In 2013, California produced approximately
-7.96 million tons of alfalfa hay, valued at
-$1.57 billion. 
---http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFieldCrops.pdf page 13
 
 ****
 2013: top CA commodities
@@ -466,8 +544,6 @@ http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProduct
 ## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
 ## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
 
--->
-
 These lines are _going to_ intersect<sup>1</sup>!
 
 ...
@@ -478,7 +554,9 @@ These lines are _going to_ intersect<sup>1</sup>!
 
 1. See Euclid's 5<sup>th</sup> postulate.
 
-# Works Cited
+-->
+
+# References
 
 Mekonnen, M.M. and Hoekstra, A.Y. (2010). The green, blue and grey
 water footprint of farm animals and animal products. UNESCO-IHE Institute for Water Education. Retrieved May 2, 2015 from waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf.
