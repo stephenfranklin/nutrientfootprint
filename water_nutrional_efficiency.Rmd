@@ -24,13 +24,14 @@ load("water_footprint_table.RData")
 
 ```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
+water$CA_L_per_g_protein <- round(water$CA_L_per_g_protein)
 w2 <- nPlot(CA_L_per_100g ~ protein, 
             group = 'kingdom',  name = 'Source',
             data = na.omit(water), 
             type = 'scatterChart')
 w2$chart(color = c("green", "darkred")) 
 w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
-                                return e.point.Products
+                                return e.point.Products + '<br/>' + e.point.CA_L_per_g_protein + ' L' + '&#x2F;' + 'g protein'
                             } !#")
 w2$set(title = "Water Footprint vs. Protein: California")
 w2$xAxis(axisLabel = 'Protein (%)')
@@ -208,13 +209,14 @@ Figure 2 shows vastly differing water footprints of some foods grown in Californ
 
 ```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
 require(rCharts)
+water$G_L_per_g_protein <- round(water$G_L_per_g_protein)
 w2 <- nPlot(G_L_per_100g ~ protein, 
             group = 'kingdom',  name = 'Source',
             data = water, 
             type = 'scatterChart')
 w2$chart(color = c("green", "darkred")) 
 w2$chart(tooltipContent =   "#! function(key, x, y, e){ 
-                                return e.point.Products
+                                return e.point.Products + '<br/>' + e.point.G_L_per_g_protein + ' L' + '&#x2F;' + 'g protein'
                             } !#")
 w2$set(title = "Water Footprint vs. Protein: Global Average")
 w2$xAxis(axisLabel = 'Protein (%)')
@@ -344,7 +346,7 @@ The water footprints of all the animal products should add up to footprint sligh
 
 ### Conclusion
 
-From the perspective of maintaining sustainable water usage during the California drought, it seems useful to reduce production of water intensive products. A personal level of activism by changing consumption may or may not be influential in changing hugely profitable agricultural practices. But it is a question that is out there. The answer to that question is to eat less meat, fewer nuts, and more Brazil nuts, and more imported food in general. Hope that helps out. 
+From the perspective of maintaining sustainable water usage during the California drought, it seems useful to reduce production of water intensive products. A personal level of activism by changing consumption may or may not be influential in changing hugely profitable agricultural practices. But it is a question that is out there. The answer to that question is to eat less beef, fewer nuts, more turkey, and more Brazil nuts, and more imported food in general. Hope that helps out. 
 
 
 <!--
