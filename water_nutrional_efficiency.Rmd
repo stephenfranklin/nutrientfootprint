@@ -5,6 +5,7 @@ date: "May 2, 2015"
 output:
   html_document:
     keep_md: yes
+  pdf_document: default
 ---
 
 ```{r libraries, echo=FALSE, message=F}
@@ -22,7 +23,7 @@ load("water_footprint_table.RData")
 ```
 
 
-```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA}
+```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA, eval=T}
 require(rCharts)
 water$CA_L_per_g_protein <- round(water$CA_L_per_g_protein)
 w2 <- nPlot(CA_L_per_100g ~ protein, 
@@ -80,9 +81,7 @@ You've probably heard by now that there's a [severe drought](http://en.wikipedia
 
 Others have argued that the water footprint of almonds really [isn't so bad](http://gizmodo.com/seriously-stop-demonizing-almonds-1696065939) compared to meat and to fodder crops for that meat. 
 
-But do almonds or beef really have disproportionate water footprints if you consider the nutrition or energy they provide? Yes.
-
-# Why Protein?
+But do almonds or beef really have disproportionate water footprints if you consider the nutrition or energy they provide? Yes, they do.
 
 All known lifeforms depend on water, and most require quite a lot of water. The water is necessary for photosynthesis and respiration, and for metabolic activities, such as monomerization, the building of the basic molecules (amino acids, carbohydrates, lipids) which make up our mass and structure.
 
@@ -90,28 +89,19 @@ The Calorie is the unit of energy that we like to use for food. The energy we ge
 
 If we can assess the water footprint of foods controlling for their protein content, then we can get a good idea of what really is or isn't an efficient use of agricultural water for the stuff we eat.
 
-# What is a Water Footprint?
+## What is a Water Footprint?
 
-The studies we have of water footprints mostly come from the UNESCO-IHE Institute for Water Education in the Netherlands, as well as the Pacific Institute in Oakland, California. The water footprint is the measure of *virtual water*, a concept introduced by British geologist John Allan, which refers to the sum of water used in the production and trade of commodities. If 1000 liters were used to produce a thing, that thing contains 1000 liters of virtual water.
+A water footprint is the measure of *virtual water*, a concept introduced by British geologist John Allan, which refers to the sum of water used in the production and trade of commodities. If 1000 liters were used to produce a thing, that thing contains 1000 liters of virtual water.
 
-Arjen Hoekstra and Mesfin Mekonnen at the UNESCO-IHE measure three types of virtual water. The *blue water footprint* refers to the ground water used to produce a product, the *green water footprint* refers to the rain water used, and the *grey water footprint* is the volume of water that is required to dilute all of a product's pollutants (fertilizers, pesticides, etc.) to such an extent that the quality of the water remains at or above legal standards.
-
-For the animal sourced foods, the UNESCO-IHE studies also separate out four categories of farming systems: grazing, industrial, a mix of those two, and a weighted average. For plant sourced foods, the studies are sourced nationally as well as by state, province, or region; the animal source studies are sourced just by nation.
-
-# What we did.
-
-In this study, we look at the UNESCO-IHE water footprint data (for California and a global average) with nutrition data from the USDA National Nutrient Database. We used only the weighted average farming system, and we used just one total water footprint, the sum of those three. We've paired down the UNESCO-IHE studies to 48 plant sourced foods (38 in California) and 11 animal sourced foods.
-
-# What we found.
+The studies we have of water footprints mostly come from the UNESCO-IHE Institute for Water Education in the Netherlands, as well as the Pacific Institute in Oakland, California. Arjen Hoekstra and Mesfin Mekonnen at the UNESCO-IHE measure three types of virtual water. The *blue water footprint* refers to the ground water used to produce a product, the *green water footprint* refers to the rain water used, and the *grey water footprint* is the volume of water that is required to dilute all of a product's pollutants (fertilizers, pesticides, etc.) to such an extent that the quality of the water remains at or above legal standards.
 
 The water footprint of a food strongly correlates positively with its protein content. What is also interesting is that, controlling for protein, animal sourced foods do not stand out from plant sourced foods. 
 
-So yes, meats and nuts have amazingly high water footprints, and beef and almonds are outliers at the very top. In California, beef takes 75 liters of water for each gram of protein it has. At 21% protein that's 1,575 liters of water for just 100 grams of raw beef. (That's 400 gallons for just 3.5 ounces.) Almonds, also 21% protein, are almost as thirsty, requiring 62 liters per gram of protein -- 1,300 liters for 100 grams of almonds.
-1/2 lb hamburger: 840 gallons
-1/2 lb almonds: 780 gallons
+So yes, meats and nuts have amazingly high water footprints, and beef and almonds are outliers at the very top. Beef in the U.S. requires nearly 70 liters of water for each gram of protein. At 21% protein, that's 1,420 liters of water for just 100 grams of raw beef. A half-pound hamburger uses 850 gallons of water. 
+Californian almonds, also 21% protein, are almost as thirsty, requiring over 60 liters per gram of protein. A half-pound of almonds uses 780 gallons of water. 
 Even less water efficient are walnuts, garbanzo beans, and hazelnuts. Hazelnuts require 115 liters of water for each gram of protein they provide. 
 
-# Low Water Foods. 
+## Low Water Foods. 
 
 Despite the strong trend of higher protein foods having higher water footprints, we can still find high protein foods that buck the trend and are unusually efficient in their water use.
 
@@ -144,7 +134,7 @@ The most water efficient proteins on the lists are from garlic, spinach, and bru
 
 The big advantage of high protein foods (meats and nuts) is that we can eat a lot less of them, which makes life easier. For example, if you eat just 100 grams (3.5 ounces) of turkey, you'll get 20 grams of protein. To get 20 grams of protein from spinach, you would need to eat a kilogram (2.2 pounds). But the 160 virtual liters of water in a kilo of spinach is still less than the 220 liters in 100 grams of turkey -- 60 liters less. It sounds like an enourmous amount of spinach to eat in one sitting, but not unreasonably so. There are [vegan athletes](http://www.greatveganathletes.com/) who do eat these quantities of fruits and vegetables.  
 
-# Low Water; High Protein.
+## Low Water; High Protein.
 
 The most water efficient diet would probably be plant-based and would exclude nuts. That diet might involve a lot of green smoothies and expensive plant-sourced protein powders, and would be a big challenge for most of us.
 
@@ -170,12 +160,12 @@ kable(Gl_adjfp_prot_10, format = "html", caption = "Table 4: Global Average")
 </td></tr>
 </table>
 
-# Brazil Nuts
+## Brazil Nuts.
 
 The most water efficient food in this dataset is the Brazil nut, which is definitely an outlier. It's water footprint of 2 liters per gram protein is so low that it seems suspicious. All the other nuts have extraordinarily high water footprints. There's no biological reason the Brazil nut should be so water efficient; the reason perhaps is in its method of production. Brazil nuts are unique in that they are gathered from existing trees rather than from plantations. The existing infrastructure of old trees means that ground water needn't be diverted to grow a tree first, and therefore needn't be included (or just isn't measurable) in an accounting of the water footprint. Of course if everyone started eating tons of Brazil nuts, then they'd have to start growing more trees which would likely have a very high water footprint. . . for Brazil, that is. In California, Brazil nuts represent imported virtual water. 
 
 
-# Comparison of Water Footprints: California vs. Global Average 
+## Comparing California to the Global Average. 
 ```{r diffs, echo=F, eval=F}
 differences <- na.omit((water[, .(Products, 
                          difference=(California_footprint-Global_avg_footprint),
@@ -207,7 +197,7 @@ ggsave("differences.svg", width=8)
 
 Figure 2 shows vastly differing water footprints of some foods grown in California versus a global average. Garbanzo beans (chickpeas) stand out as being ridiculously thirsty in California, but quite water efficient elsewhere. On the other hand, pistachios seem to have a relatively low water footprint in California.
 
-```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA}
+```{r interactive, echo = FALSE, fig.path="", results = "asis", comment=NA, eval=T}
 require(rCharts)
 water$G_L_per_g_protein <- round(water$G_L_per_g_protein)
 w2 <- nPlot(G_L_per_100g ~ protein, 
@@ -260,11 +250,13 @@ ggsave("prot_Global.pdf", width=8)
 
 ##### Figure 3 (Interactive):  Water Footprint vs. Protein: Global Average.
 
-# About the Data.
+## About the Data.
+
+We looked at the UNESCO-IHE water footprint data for California as well as a global average. And we compared the water footprints for foods to their  nutrition data from the USDA National Nutrient Database. For the animal sourced foods, the UNESCO-IHE studies also separate out four categories of farming systems: grazing, industrial, a mix of those two, and a weighted average. For plant sourced foods, the studies are sourced nationally as well as by state, province, or region; the animal source studies are sourced just by nation. We used only the weighted average farming system, and we used just one total water footprint, the sum of those three. We've paired down the UNESCO-IHE studies to 48 plant sourced foods (38 in California) and 11 animal sourced foods.
 
 A couple of caveats about this data. The water footprint is calculated for raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible. (The extra few liters it takes to clean and cook the beans is negligable though.) There are many different proteins made from combinations of amino acids, nine of which our bodies can't make. We call those nine the essential amino acids, and foods that have those nine are said to have a complete protein. Monocots (like rice and corn) and dicots (like beans and lentils) complement each other's amino acids to form a complete protein. (By the way, your cells store them up, so you don't even have to eat them at the same meal!) The advantage of animal sourced food is that it always has complete proteins. Some plants do too though -- quinoa is famous for that. But nevermind that, we're not counting the completeness of proteins here, just the overall quantity.
 
-# Protein Values in the UNESCO-IHE Report.
+## Protein Values in the UNESCO-IHE Report.
 
 In Mekonnen and Hoekstra's 2012 report, __The Green, Blue and Grey Water Footprint of Farm Animals and Animal Products__, they provide their own table of water fooprints versus protein:
 
@@ -344,221 +336,11 @@ Animal feed is the primary contributer to the water footprint of animal sourced 
 
 The water footprints of all the animal products should add up to footprint slightly greater than that of the animal feed (21 million acre feet). The water footprints of beef and turkey and pork and milk add up to nearly 19 million acre feet, which is a reasonable considering we don't have the data for chicken meat. Assuming we eat at least ten times as much chicken as turkey, that would put the water footprint above 22 million acre feet.  
 
-### Conclusion
+## Conclusion
 
-From the perspective of maintaining sustainable water usage during the California drought, it seems useful to reduce production of water intensive products. A personal level of activism by changing consumption may or may not be influential in changing hugely profitable agricultural practices. But it is a question that is out there. The answer to that question is to eat less beef, fewer nuts, more turkey, and more Brazil nuts, and more imported food in general. Hope that helps out. 
+From the perspective of maintaining sustainable water usage during the California drought, it would seem useful to reduce production of water intensive products. Activism by consumers who wish to avoid water intensive foods may or may not be influential in changing hugely profitable agricultural practices. The poignant question that hasn't been answered before is: What does a water sustainable diet amid the California drought look like? The answer to that question is to eat less beef, fewer nuts, more turkey, more Brazil nuts, and more imported food in general. Hope that helps out. 
 
-
-<!--
-****
-
-Animal feed is separated into two main components: 20% concentrates and 80% roughages. Concentrates are feeds which contain high levels of nutrients and less than 18% crude fiber content. Concentrates include cereals, roots and tubers, oil crops, oil meals, bran, molasses, pulses, sugar crops, fruits and vegetables. Roughages are feeds with over 18% crude fiber content and low nutrient density. Roughages include forage cereals such as corn, oats, sorghum; oilseeds such as winter rape; roots and tubers such as potatoes, beets, swedes, and turnips; pulses such as field peas, beans, sweet lupins, and vetches; pumpkins; cabbages; sugarcane; lucerne (alfalfa); berseem; pastures; and straw and chaff from cereals and pulses. Other synonyms for animal feed are fodder, forage, hay, haylage, greenchop, etc.
-
-The UNESCO_IHE reports list water footprints (in $m^3/ton$) and ratios of the many ingredients of animal feed products by nation. But strangely, the water footprint for alfalfa, which represents a large portion of animal feed grown in California, isn't provided. The ratio of ingredients in animal feed widely varies by nation as well as by animal. The USDA Field Crops Report for California lists the production weight by year for several categories that may constitute animal feed including "Forage, Alfalfa", "Hay, Alfalfa", "Haylage And Greenchop", "Corn For Silage", and "Sorghum For Silage". Pacific Intstitute's report (Figure 4) shows California's overall water footprints (in acre-feet per year). 
-
-##### Table 8: Animal Feed Crops in California in 2013
-
-Crop                | Weight (short tons)   | notes
---------------------|-----------------------|-------
-corn for silage     |  10,998,000           |
-forage, all         |   9,362,000           | incl. alfalfa forage
-hay, all            |   7,646,000           | incl. alfalfa hay
-haylage & greenchop |   3,472,000           |
-sorghum for silage  |     646,000           | 2008
-total               |  32,124,000           |
-
-http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CAFieldCrops.pdf
-
-
-
-
-
-U.S. beef 2013 (billion lb): 
-consumption: 25.5; production: 25.7; exported: 2.6
-imported: 2.4;
-http://www.ers.usda.gov/topics/animal-products/cattle-beef/statistics-information.aspx
-
-beef yield is 45% of live weight. http://www.cattletoday.com/forum/viewtopic.php?f=8&t=43995
-
-cows slaughtered in 2013: 32.459 million
-25.7*10^9 lbs of beef / 32*10^6 cows = 800 lbs per cow. at 1660 per cow and a 50% meat yield that is a perfectly reasonable number of slaugtered cows.
-http://www.humanesociety.org/news/resources/research/stats_slaughter_totals.html
-
-25.5 billion lbs = 1,275,000 short tons.
-
-25.7 billion lbs * 14191 m^3/metric ton = 165.4 billion cubic meters
-= 134.1 million acre feet
-
-California is 12% of the US population.
-consumption: .12 * 25.5 = 3.06 billion lbs = 1,530,000 short tons
-1.5 million short tons * 14191 m^3/metric ton = 19.31 billion cubic meters
-= 15.65 million acre feet.
-
-2013
-89 million cattle in US. 24.3 * 10^8 / 88 * 10^6 = 276 lbs
-should be more like 4-500. so maybe half the cattle were used for dairy.
-Cattle and calves on feed for slaughter in all feedlots, 12.7 million:
-at 50% carcass meat, 12.7*10^6 * 1660 lbs/2 =~ 10 billion lbs
-but there was 25.7 billion lbs produced.
-
-
-2013 CA
-5.3 million cattle and calves. 
-CA produced 1 million sh tons of live cattle 2013
-5.3 million cattle * 1299/2000  = 3.4 million sh tons 
-if all the cattle were of a small breed: 1.6 million tons
-
-1,742,000 cattle slaughtered at a weight of 1299 lb. p4. 
-1,742,000 * 1299/2000 = 1,131,429 sh tons
-1,131,429 sh tons *0.45 = 509,143 sh tons of beef.
-509,143 sh tons * 14191 m^3/metric ton = 6.555 billion cubic meters water
-= 5.314 million acre-feet.
-
-176,000 calves at 102 lbs
-176,000 * 102/2000 = 8976 sh tons
-8976 sh tons *0.45 = 4039 sh tons
-4039 sh tons * 14191 m^3/metric ton = 0.52 billion cubic meters water
-= 0.042 million acre-feet.
-
-
-pigs 2,365,000 at 245 lb.
-2365000 * 245/2000 * 0.57 = 165,136 sh tons.
-165136 sh tons * 5508 m^3 per metric ton = 825 million m^3 = 669,000 acre feet
-yield is 57%
-http://www.oda.state.ok.us/food/fs-hogweight.pdf
-
-Of the 5.3 million:
-beef cows that have calved 610,000  milk cows that have calved 1,780,000
-heifers beef cow replacement 110,000 heifers milk cow replacement 780,000
-heifers other 220,000
-steers 620,000   bulls 70,000   calves (under 500 lbs) 1,110,000
-
-CA total cattle on feed i.e. to be meat 510,000
-http://usda.mannlib.cornell.edu/usda/nass/Catt//2010s/2014/Catt-01-31-2014.pdf
-510,000 * 1660 lbs /2 = 423 million lbs of beef
-423*10^6 lbs * 14191 m^3/metric ton = 2.723 billion m^3 = 2.2 million acre feet
-
-
-
-US
-Year  Cattle Cows Beef-Production 
-(000) (000) (mil lbs.) (lbs.) 
-1980 111,242 47,866 21,469 449 
-2009 94,521 41,045 25,951 632 
-
-
-
-Top California Commodities in 2013
-
-Commodity           | Weight (short tons)   | Value (US$)     | rank
---------------------|-----------------------|---------------|-------
-Milk and Cream      | 20,630,000            | 7,617,641,000 | 1
-Almonds (shelled)   |  1,005,000            | 5,768,100,000 | 2
-Grapes              |  7,717,000            | 5,585,584,000 | 3
-Cattle & Calves     |  1,020,000            | 3,048,390,000 | 4
-Strawberries        |  1,378,000            | 2,200,729,000 | 5
-Walnuts             |    492,000            | 1,795,800,000 | 6
-Lettuce             |  2,987,700            | 1,679,164,000 | 7
-Hay, Alfalfa, etc   |  7,956,000            | 1,569,780,000 | 8
-Tomatoes            | 12,520,000            | 1,222,470,000 | 9
-Nursery             | NA                    | 1,219,800,000 | 10
-corn for grain      |    982,800            |   194,805,000 | 32
-beans, dry          |     57,500            |    61,410,000 | 49
-
-http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CA_Ag_Overview.pdf
-
-
-California’s dairies produced 41.3 billion pounds of milk, accounting for almost 21 percent of the nation's milk supply.  (usda p1)
-cream 1484 ;  185,664,000 +  127,508,000 +  27,940,000 = 341112000 lb =170556
-milk 822 ;    593,910,000 +  583,106,000 + 54,601,000 = 1231617000 lb =615809
-
-822 (m^3/metric ton) * 20.6*10^6 short tons = 12.5 million acre feet = 15.4 km^3
-1484 (m^3/metric ton) * 20.6*10^6 short tons = 22.5 million acre feet = 27.7 km^3
-
-*****
-
-http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CALivestockandDairy.pdf
-dairy p7
-cheese 2,313,000,000 lbs
-yogurt 620,171,000 lbs in 2009
-milk 41.3 billion lbs  44.2% went to cheese (dairy 2013: $7,617,641,000)
-cream 185,664,000 + 127,508,000
-eggs 5.05 billion
-cattle and calves live 2,039,468,000 lbs    $3,059,175,000
-sheep and lambs live 45,791,000 lbs         $   67,182,000 2010
-hogs and pigs live 47,708,000 lbs           $   41,556,000
-turkey meat 365,300,000 lbs                 $  242,925,000
-
-turkey 165697 metric tons * 2218 m^3/ metric ton = 367.5 million m^3 of water
-= 297936 acre feet.
-
-if all the cattle were used for beef that would be
-beef 
-14141 m3/m.ton * 2039468000 lbs = 13.08 billion m3 = 10.6 million acre feet. 
-
-hay, alfalfa: 
-15.2 million acre feet / 7,956,000 short tons = 2.598 m3/kg = 2598 m3/ton = 259.8 L/100g
-That seems reasonable; it's close to what rice is.
-
-
-meat animals 2013 $3,088,751,000
-
-
-****
-2013: top CA commodities
-Milk and Cream  $7,617,641,000  almost 21 percent of the nation's milk supply. Asian markets imported 53 percent of US dairy exports in 2013
-Almonds         $5,768,100,000    99% of the nation
-Grapes          $5,585,584,000    leads the nation
-Cattle & Calves $3,048,390,000    
-meat animal     $3,088,751,000
-
-
-http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/CA_Ag_Overview.pdf
-
-****
-general source for CA 2013 yields: 
-http://www.nass.usda.gov/Statistics_by_State/California/Publications/California_Ag_Statistics/index.asp
-
-******
-
-harvested roughages: include those which are sown and harvested annually for forage, fodder or silage. The principal types of
-harvest roughages include forage (green) cereals such as maize, oats and sweet sorghum; sugarcane, lucerne (alfalfa) and berseem
-(Egyptian clover); special high yielding grasses cultivated chiefly for silage (such as Thimoth grass); roots and tubers such as
-potatoes, beets, swedes, turnips; oilseeds such as winter rape; pulses such as field peas, beans, sweet lupins and vetches;
-vegetables such as pumpkins and cabbages. These feeds are sometimes processed for lower fibre content and bulk and are then
-usually classified as concentrate feeds (e.g. cassava chips and pellets, processed alfalfa, pea and bean meals).  (p14)
-
-The total feed consumption
-over the period 1996-2005 was 4996 million ton feed in dry matter per year, on average. Roughages account for
-the largest share out of this total, accounting for 80%, and feeds derived from crop production account for the
-remaining 20%.  (p20)
-
-http://waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf
-
-*****
-
-#### Conversions:
-#### 1000 cubic meters / metric ton
-#### = 120 gallons / pound
-#### = 26.4 gallons / 100 grams  
-#### ~or~ 4000 m3/t = 100 gal / 100 g
-
-## 1/2 lb hamburger: 14000 m3/t = 14*120/2 = 840 gallons
-## 1/2 lb almonds:   13000 m3/t = 13*120/2 = 780 gallons
-
-These lines are _going to_ intersect<sup>1</sup>!
-
-...
-
---------
-
-**Footnotes:**
-
-1. See Euclid's 5<sup>th</sup> postulate.
-
--->
-
-# References
+## References
 
 Mekonnen, M.M. and Hoekstra, A.Y. (2010). The green, blue and grey
 water footprint of farm animals and animal products. UNESCO-IHE Institute for Water Education. Retrieved May 2, 2015 from waterfootprint.org/media/downloads/Report-48-WaterFootprint-AnimalProducts-Vol1.pdf.
