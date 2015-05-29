@@ -1,11 +1,12 @@
 ---
 title: "High-Protein Water-Efficient Foods."
 author: "Stephen Franklin"
-date: "May 2, 2015"
+date: "May 29, 2015"
 output:
   html_document:
     keep_md: yes
-  pdf_document: default
+  pdf_document:
+    fig_crop: no
 ---
 
 ```{r libraries, echo=FALSE, message=F}
@@ -70,8 +71,7 @@ ggsave("prot_US_CA.svg", width=10, height=8)
 ### The jitter function shifts the data points to reduce overlap.
 ### Because it uses randomness, I ran it a few times and chose the clearest version.
 ```
-![The water footprint is positively correlated with protein content.](./prot_US_CA1.svg)
--->
+![The water footprint is positively correlated with protein content.](./prot_US_CA.svg) -->
 
 #### Figure 1 (Interactive): Water Footprint vs. Protein: California
 
@@ -245,8 +245,7 @@ ggsave("prot_Global.pdf", width=8)
 ### The jitter function shifts the data points to reduce overlap.
 ### Because it uses randomness, I ran it a few times and chose the clearest version.
 ```
-![The water footprint is positively correlated with protein content.](./prot_Global1.svg)
--->
+![The water footprint is positively correlated with protein content.](./prot_Global.svg) -->
 
 ##### Figure 3 (Interactive):  Water Footprint vs. Protein: Global Average.
 
@@ -361,5 +360,5 @@ Fulton, J., Cooley, H., & Gleick, P.H. (2012). Assessment of California’s Wate
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />
 
-This work is a reproducible document written in R and licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. You can see all the code (use it and modify it) at [https://github.com/stephenfranklin/nutrientfootprint](https://github.com/stephenfranklin/nutrientfootprint).
-To view a copy of this license, visit [http://creativecommons.org/licenses/by-sa/4.0/](http://creativecommons.org/licenses/by-sa/4.0/).
+This work is a reproducible document written in R and licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. You can see all the code (use it and modify it) at https://github.com/stephenfranklin/nutrientfootprint.
+To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
