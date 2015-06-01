@@ -40,9 +40,9 @@ Nutrition
 http://ndb.nal.usda.gov/ndb/doc/index
 
 ## Works
-`water_footprint.R`: An R script which downloads the datasets and returns the data table: `water_footprint_table.RData`.
-`water_footprint_analysis.Rmd`: An R Markdown document which explores data models.
-`water_nutritional_efficiency.Rmd`: The published report.
+`water_footprint.R`: An R script which downloads the datasets and returns the data table: `water_footprint_table.RData`.  
+`water_footprint_analysis.Rmd`: An R Markdown document which explores data models.  
+`water_nutritional_efficiency.Rmd`: The published report.  
 
 
 
