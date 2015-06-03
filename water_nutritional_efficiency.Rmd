@@ -19,10 +19,11 @@ library(plyr)
 library(rCharts)
 library(psych)
 library(xtable)
-#library(printr)
 load("water_footprint_table.RData")
 ```
 
+<!--[Printable pdf](http://s3-us-west-2.amazonaws.com/wp-stephenfranklin.info/wp-content/uploads/2015/06/High-Protein_Water-Efficient-Foods.pdf
+-->
 
 ```{r interactive_CA, echo = FALSE, fig.path="", results = "asis", comment=NA, eval=T}
 require(rCharts)
@@ -77,35 +78,31 @@ ggsave("prot_US_CA.svg", width=10, height=8)
 
 ****
 
-You've probably heard by now that there's a [severe drought](http://en.wikipedia.org/wiki/Climate_change_in_California#Drought) in California, and that governor Jerry Brown has [ordered](http://www.waterboards.ca.gov/waterrights/water_issues/programs/drought/docs/040115_executive_order.pdf) a 25% reduction in city water usage. You've probably also heard that 80% of [California's water](http://www.sacbee.com/opinion/op-ed/soapbox/article17332904.html) is used by agriculture, and that some crops, [famously almonds](http://www.motherjones.com/environment/2015/01/california-drought-almonds-water-use), require a disproportionally large amount of water to grow, which is to say, they have a large *water footprint*.
-
-Others have argued that the water footprint of almonds really [isn't so bad](http://gizmodo.com/seriously-stop-demonizing-almonds-1696065939) compared to meat and to fodder crops for that meat. 
-
-But do almonds or beef really have disproportionate water footprints if you consider the nutrition or energy they provide? Yes, they do.
+You've probably heard by now that there is a [severe drought](http://en.wikipedia.org/wiki/Climate_change_in_California#Drought) in California, and that governor Jerry Brown has [ordered](http://www.waterboards.ca.gov/waterrights/water_issues/programs/drought/docs/040115_executive_order.pdf) a 25% reduction in city water usage. You've probably also heard that 80% of [California's water](http://www.sacbee.com/opinion/op-ed/soapbox/article17332904.html) is used by agriculture, and that some crops--[famously almonds](http://www.motherjones.com/environment/2015/01/california-drought-almonds-water-use)--require a disproportionately large amount of water to grow. That is to say, they have a large *water footprint*. Others have argued that the water footprint of almonds really [isn't so bad](http://gizmodo.com/seriously-stop-demonizing-almonds-1696065939) compared to meat and to fodder crops for that meat. But do almonds or beef really have disproportionate water footprints if you consider the nutrition or energy they provide? Yes, they do.
 
 All known lifeforms depend on water, and most require quite a lot of water. The water is necessary for photosynthesis and respiration, and for metabolic activities, such as monomerization, the building of the basic molecules (amino acids, carbohydrates, lipids) which make up our mass and structure.
 
 The Calorie is the unit of energy that we like to use for food. The energy we get from food takes the form of fats, carbohydrates, and proteins (the polymers built up from their respective basic molecules). In one sense, the calorie is a good summary measure of how useful a food is to you. All else being equal, it would be more efficient to eat something higher in calories. In much of the world, there is no short supply of cheap calories from fats and carbohydrates. But protein tends to be expensive.
 
-If we can assess the water footprint of foods controlling for their protein content, then we can get a good idea of what really is or isn't an efficient use of agricultural water for the stuff we eat.
+If we can assess the water footprint of foods controlling for their protein content, then we can get a good idea of what really is or isn't an efficient use of agricultural water for the food we eat.
 
 ## What is a Water Footprint?
 
-A water footprint is the measure of *virtual water*, a concept introduced by British geologist John Allan, which refers to the sum of water used in the production and trade of commodities. If 1000 liters were used to produce a thing, that thing contains 1000 liters of virtual water.
+A water footprint is the measure of *virtual water*, a concept introduced by British geologist John Allan, and refers to the sum of water used in the production and trade of commodities. If 1000 liters were used to produce a thing, that thing contains 1000 liters of virtual water.
 
-The studies we have of water footprints mostly come from the UNESCO-IHE Institute for Water Education in the Netherlands, as well as the Pacific Institute in Oakland, California. Arjen Hoekstra and Mesfin Mekonnen at the UNESCO-IHE measure three types of virtual water. The *blue water footprint* refers to the ground water used to produce a product, the *green water footprint* refers to the rain water used, and the *grey water footprint* is the volume of water that is required to dilute all of a product's pollutants (fertilizers, pesticides, etc.) to such an extent that the quality of the water remains at or above legal standards.
+The studies we have of water footprints mostly come from the UNESCO-IHE Institute for Water Education in the Netherlands, as well as the Pacific Institute in Oakland, California. Arjen Hoekstra and Mesfin Mekonnen at the UNESCO-IHE measure three types of virtual water. The *blue water footprint* refers to the groundwater used to produce a product. The *green water footprint* refers to the rain water used. The *grey water footprint* is the volume of water that is required to dilute all of a product's pollutants (fertilizers, pesticides, etc.) to such an extent that the quality of the water remains at or above legal standards.
 
 The water footprint of a food strongly correlates positively with its protein content. What is also interesting is that, controlling for protein, animal sourced foods do not stand out from plant sourced foods. 
 
-So yes, meats and nuts have amazingly high water footprints, and beef and almonds are outliers at the very top. Beef in the U.S. requires nearly 70 liters of water for each gram of protein. At 21% protein, that's 1,420 liters of water for just 100 grams of raw beef. A half-pound hamburger uses 850 gallons of water. 
-Californian almonds, also 21% protein, are almost as thirsty, requiring over 60 liters per gram of protein. A half-pound of almonds uses 780 gallons of water. 
+So yes, meats and nuts have amazingly high water footprints, and beef and almonds are outliers at the very top. Beef in the U.S. requires nearly 70 liters of water for each gram of protein. With 21% protein, that's 1,420 liters of water for just 100 grams of raw beef. A half-pound hamburger uses 850 gallons of water. 
+Californian almonds (also with 21% protein) are almost as thirsty, requiring over 60 liters per gram of protein. A half-pound of almonds uses 780 gallons of water. 
 Even less water efficient are walnuts, garbanzo beans, and hazelnuts. Hazelnuts require 115 liters of water for each gram of protein they provide. 
 
 ## Low Water Foods. 
 
 Despite the strong trend of higher protein foods having higher water footprints, we can still find high protein foods that buck the trend and are unusually efficient in their water use.
 
-Here are two lists of the least water intensive foods, one list for California grown foods, and one from a global average. I've ordered it by the second column, which shows the amount of water (in liters) used to produce just one gram of protein in that food.
+Here are two lists of the least water intensive foods: one list for California grown foods, and one from a global average. We've ordered them by the second column, which shows the amount of water (in liters) used to produce just one gram of protein in that food.
 
 ##### Tables 1 & 2: Water Efficient Foods produced in California and by global average.
 <table style="width:100%";>
@@ -251,7 +248,9 @@ ggsave("prot_Global.pdf", width=8)
 
 ## About the Data.
 
-We looked at the UNESCO-IHE water footprint data for California as well as a global average. And we compared the water footprints for foods to their  nutrition data from the USDA National Nutrient Database. For the animal sourced foods, the UNESCO-IHE studies also separate out four categories of farming systems: grazing, industrial, a mix of those two, and a weighted average. For plant sourced foods, the studies are sourced nationally as well as by state, province, or region; the animal source studies are sourced just by nation. We used only the weighted average farming system, and we used just one total water footprint, the sum of those three. We've paired down the UNESCO-IHE studies to 48 plant sourced foods (38 in California) and 11 animal sourced foods.
+We looked at the UNESCO-IHE water footprint data for California as well as a global average. And we compared the water footprints for foods to their nutrition data from the USDA National Nutrient Database. 
+We used the total water footprint; the sum of the green, blue, and grey water footprints.
+For the animal sourced foods, the UNESCO-IHE studies also separate out four categories of farming systems: grazing, industrial, a mix of those two, and a weighted average. For plant sourced foods, the studies are sourced nationally as well as by state, province, or region. For animal sourced foods, the studies are sourced solely by nation. We used only the weighted average farming system, and we used just one total water footprint, the sum of those three. We've paired down the UNESCO-IHE studies to 48 plant sourced foods (38 in California) and 11 animal sourced foods.
 
 A couple of caveats about this data. The water footprint is calculated for raw foods. Raw meat has more fat and water than cooked meat, and therefore has less protein by mass. Raw lentils and beans are dry and have much more protein by mass than when they are actually edible. (The extra few liters it takes to clean and cook the beans is negligable though.) There are many different proteins made from combinations of amino acids, nine of which our bodies can't make. We call those nine the essential amino acids, and foods that have those nine are said to have a complete protein. Monocots (like rice and corn) and dicots (like beans and lentils) complement each other's amino acids to form a complete protein. (By the way, your cells store them up, so you don't even have to eat them at the same meal!) The advantage of animal sourced food is that it always has complete proteins. Some plants do too though -- quinoa is famous for that. But nevermind that, we're not counting the completeness of proteins here, just the overall quantity.
 
@@ -360,5 +359,6 @@ Fulton, J., Cooley, H., & Gleick, P.H. (2012). Assessment of California’s Wate
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />
 
-This work is a reproducible document written in R and licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. You can see all the code (use it and modify it) at https://github.com/stephenfranklin/nutrientfootprint.
-To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
+This work is a reproducible document written in R and licensed under the Creative Commons Attribution-ShareAlike 4.0 International License.  
+To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.  
+You can see all the code (use it and modify it) at https://github.com/stephenfranklin/nutrientfootprint.  
