@@ -1,5 +1,5 @@
 # nutrientfootprint
-A look at the California water-footprint of various foods per gram protein (or other nutrients).
+An analysis of the water-footprints of foods with respect to their protein content.
 Author: Stephen Franklin
 
 ## Background
@@ -28,8 +28,6 @@ http://www.alternet.org/environment/you-boycott-all-california-almonds-read
 http://www.slate.com/articles/business/moneybox/2015/04/almonds_in_california_they_use_up_a_lot_of_water_but_they_deserve_a_place.html  
 http://news.nationalgeographic.com/2015/04/150409-water-agriculture-cattle-dairy-conservation-ngfood/
 
-Alissa Walker, in her gizmodo article, points out that rather than simply avoiding foods because they have a high water costs, one might look at the nutritional value that a food delivers for its water cost.
-
 ## Data
 
 Plants
@@ -40,3 +38,13 @@ http://waterfootprint.org/media/downloads/Report48-Appendix-V.zip
 
 Nutrition
 http://ndb.nal.usda.gov/ndb/doc/index
+
+## Works
+`water_footprint.R`: An R script which downloads the datasets and returns the data table: `water_footprint_table.RData`.  
+`water_footprint_analysis.Rmd`: An R Markdown document which explores data models.  
+`water_nutritional_efficiency.Rmd`: The published report.  
+
+
+
+
+
